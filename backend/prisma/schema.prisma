@@ -1,0 +1,165 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+// ===================== USERS =====================
+model User {
+  id_user       Int       @id @default(autoincrement())
+  nom           String
+  email         String    @unique
+  mot_de_passe  String
+  role          Role
+  date_creation DateTime  @default(now())
+
+  eleves        Eleve[]   @relation("ParentEleves")
+  enseignements Enseignement[]
+  activites     Activite[] @relation("ActivitesCreees")
+  messages_envoyes Message[] @relation("MessagesEnvoyes")
+  messages_recus  Message[] @relation("MessagesRecus")
+  annonces       Annonce[]
+}
+
+enum Role {
+  admin
+  enseignant
+  parent
+}
+
+// ===================== ELEVES =====================
+model Eleve {
+  id_eleve       Int       @id @default(autoincrement())
+  nom            String
+  date_naissance Date
+  email          String?   @unique
+  parent         User      @relation("ParentEleves", fields: [id_parent], references: [id_user])
+  id_parent      Int
+
+  eleves_classes ElevesClasse[]
+  absences       Absence[]
+  notes          Note[]
+}
+
+// ===================== CLASSES =====================
+model Classe {
+  id_classe     Int       @id @default(autoincrement())
+  nom_classe    String
+  annee_scolaire String
+  enseignements Enseignement[]
+  eleves_classes ElevesClasse[]
+  activites     Activite[]
+  annonces      Annonce[]
+}
+
+// ===================== ENSEIGNEMENTS =====================
+model Enseignement {
+  id_enseignement Int      @id @default(autoincrement())
+  id_enseignant   Int
+  id_classe       Int
+  matiere         String
+
+  enseignant User   @relation(fields: [id_enseignant], references: [id_user])
+  classe     Classe @relation(fields: [id_classe], references: [id_classe])
+  notes      Note[]
+}
+
+// ===================== ELEVES_CLASSES =====================
+model ElevesClasse {
+  id_eleve_classe Int     @id @default(autoincrement())
+  id_eleve        Int
+  id_classe       Int
+
+  eleve  Eleve  @relation(fields: [id_eleve], references: [id_eleve])
+  classe Classe @relation(fields: [id_classe], references: [id_classe])
+}
+
+// ===================== ACTIVITES =====================
+model Activite {
+  id_activite  Int      @id @default(autoincrement())
+  titre        String
+  description  String?
+  date_debut   DateTime
+  date_fin     DateTime
+  id_classe    Int
+  cree_par     Int
+
+  classe       Classe @relation(fields: [id_classe], references: [id_classe])
+  enseignant   User   @relation("ActivitesCreees", fields: [cree_par], references: [id_user])
+  absences     Absence[]
+}
+
+// ===================== ABSENCES =====================
+model Absence {
+  id_absence  Int      @id @default(autoincrement())
+  id_activite Int
+  id_eleve    Int
+  justifiee   Boolean  @default(false)
+  commentaire String?
+
+  activite Activite @relation(fields: [id_activite], references: [id_activite])
+  eleve    Eleve    @relation(fields: [id_eleve], references: [id_eleve])
+}
+
+// ===================== TYPES_NOTES =====================
+model TypeNote {
+  id_type_note Int      @id @default(autoincrement())
+  libelle      Libelle
+  coefficient  Float?   @default(1.0)
+  notes        Note[]
+}
+
+enum Libelle {
+  controle
+  oral
+  synthese
+}
+
+// ===================== NOTES =====================
+model Note {
+  id_note         Int      @id @default(autoincrement())
+  id_eleve        Int
+  id_enseignement Int
+  id_type_note    Int
+  valeur          Float
+  date_attribution DateTime @default(now())
+
+  eleve         Eleve        @relation(fields: [id_eleve], references: [id_eleve])
+  enseignement  Enseignement @relation(fields: [id_enseignement], references: [id_enseignement])
+  type_note     TypeNote     @relation(fields: [id_type_note], references: [id_type_note])
+}
+
+// ===================== MESSAGES =====================
+model Message {
+  id_message      Int      @id @default(autoincrement())
+  expediteur_id   Int
+  destinataire_id Int
+  contenu         String
+  date_envoi      DateTime @default(now())
+  lu              Boolean  @default(false)
+
+  expediteur   User @relation("MessagesEnvoyes", fields: [expediteur_id], references: [id_user])
+  destinataire User @relation("MessagesRecus", fields: [destinataire_id], references: [id_user])
+}
+
+// ===================== ANNONCES =====================
+model Annonce {
+  id_annonce       Int      @id @default(autoincrement())
+  titre            String
+  contenu          String
+  date_publication DateTime @default(now())
+  id_auteur        Int
+  id_classe        Int?
+
+  auteur User   @relation(fields: [id_auteur], references: [id_user])
+  classe Classe? @relation(fields: [id_classe], references: [id_classe])
+}

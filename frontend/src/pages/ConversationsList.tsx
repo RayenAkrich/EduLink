@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "../context/UserContext";
 import { getConversationsList } from "../api/messagesApi";
 import ConversationItem from "../components/ConversationItem";
-import { socket } from "../socket/socket";
+import { getSocket } from "../socket/socket";
 
 export default function ConversationsList({ onSelect }: any) {
   const { token } = useUser();
@@ -11,12 +11,15 @@ export default function ConversationsList({ onSelect }: any) {
   const load = () => {
     getConversationsList(token).then((res) => {
       setConversations(res.data);
+    }).catch((err) => {
+      console.error("Error loading conversations:", err);
     });
   };
 
   useEffect(() => {
     load();
 
+    const socket = getSocket();
     socket.on("message:new", () => {
       load();
     });

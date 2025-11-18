@@ -2,10 +2,10 @@ import { useEffect, useState, useRef } from "react";
 import { useUser } from "../context/UserContext";
 import { getConversation, sendMessage, markAsRead } from "../api/messagesApi";
 import MessageBubble from "../components/MessageBubble";
-import { socket } from "../socket/socket";
+import { getSocket } from "../socket/socket";
 
 export default function ChatPage({ userId }: any) {
-  const { id_user, token } = useUser();
+  const { user, token } = useUser();
   const [messages, setMessages] = useState([]);
   const [contenu, setContenu] = useState("");
 
@@ -15,12 +15,15 @@ export default function ChatPage({ userId }: any) {
     getConversation(token, userId).then((res) => {
       setMessages(res.data);
       markAsRead(token, userId);
+    }).catch((err) => {
+      console.error("Error loading conversation:", err);
     });
   };
 
   useEffect(() => {
     loadConversation();
 
+    const socket = getSocket();
     socket.on("message:new", (msg) => {
       if (msg.expediteur_id === userId || msg.destinataire_id === userId) {
         loadConversation();
@@ -47,7 +50,7 @@ export default function ChatPage({ userId }: any) {
     <div className="flex-1 bg-gray-800 flex flex-col">
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((m: any) => (
-          <MessageBubble key={m.id_message} message={m} isMe={m.expediteur_id === id_user} />
+          <MessageBubble key={m.id_message} message={m} isMe={m.expediteur_id === user?.id_user} />
         ))}
         <div ref={bottomRef}></div>
       </div>

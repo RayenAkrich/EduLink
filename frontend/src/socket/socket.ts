@@ -1,6 +1,16 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
-export const socket = io("http://localhost:5000", {
-  query: { userId: localStorage.getItem("id_user") },
-  transports: ["websocket"],
-});
+let socket: Socket | null = null;
+
+export const getSocket = (): Socket => {
+  if (!socket) {
+    const userId = localStorage.getItem("id_user");
+    socket = io("http://localhost:5000", {
+      query: { userId },
+      transports: ["websocket"],
+    });
+  }
+  return socket;
+};
+
+export { socket };

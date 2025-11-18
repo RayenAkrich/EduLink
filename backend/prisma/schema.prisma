@@ -40,7 +40,7 @@ enum Role {
 model Eleve {
   id_eleve       Int       @id @default(autoincrement())
   nom            String
-  date_naissance Date
+  date_naissance DateTime
   email          String?   @unique
   parent         User      @relation("ParentEleves", fields: [id_parent], references: [id_user])
   id_parent      Int

@@ -1,6 +1,8 @@
 // src/routes/message.ts
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/prisma/client";
+import {authMiddleware} from "../middleware/authMiddleware";
+
 
 
 const prisma = new PrismaClient();
@@ -78,7 +80,7 @@ router.get("/list", authMiddleware, async (req: any, res) => {
   try {
     const userId = req.user.id_user;
 
-    const list = await prisma.$queryRawUnsafe(`
+    const list: any[] = await prisma.$queryRawUnsafe(`
       SELECT 
         u.id_user,
         u.nom,
@@ -98,7 +100,15 @@ router.get("/list", authMiddleware, async (req: any, res) => {
       WHERE u.id_user != ${userId}
     `);
 
-    return res.json(list);
+    // Convert BigInt to Number for JSON serialization
+    const serializedList = list.map(item => ({
+      id_user: Number(item.id_user),
+      nom: item.nom,
+      last_message: item.last_message,
+      unread: Number(item.unread)
+    }));
+
+    return res.json(serializedList);
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: "Error loading conversations" });

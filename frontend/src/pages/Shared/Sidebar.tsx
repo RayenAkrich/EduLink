@@ -10,22 +10,28 @@ interface SidebarProps {
 
 const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element }[]> = {
   ADMIN: [
-    { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> },
-    { id: "users", label: "Gestion utilisateurs", icon: <Users size={18} /> },
-    { id: "classes", label: "Gestion classes", icon: <BookOpen size={18} /> },
-    { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> },
+    { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> }, //ahmed
+    { id: "users", label: "Gestion utilisateurs", icon: <Users size={18} /> }, //ahmed
+    { id: "classes", label: "Gestion classes", icon: <BookOpen size={18} /> }, //akriche
+    { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> }, //akriche
+    { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> }, //ayoub
+    { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> }, //ayoub
+    { id: "Messaging", label: "Messagerie", icon: <Users size={18} /> }, //for admin-enseignant communication ayoub
   ],
 
   ENSEIGNANT: [
-    { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> },
-    { id: "notes", label: "Gestion des notes", icon: <ClipboardList size={18} /> },
+    { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> }, //hajji
+    { id: "notes", label: "Gestion des notes", icon: <ClipboardList size={18} /> },//hajji
     { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> },
+    { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> },//ayoub
+    { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> },//ayoub
   ],
 
   PARENT: [
-    { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> },
-    { id: "notes", label: "Notes de mon enfant", icon: <ClipboardList size={18} /> },
-    { id: "activites", label: "Absences / Activités", icon: <Calendar size={18} /> },
+    { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> },//hajji
+    { id: "notes", label: "Notes de mon enfant", icon: <ClipboardList size={18} /> },//hajji
+    { id: "activites", label: "Absences / Activités", icon: <Calendar size={18} /> },//arkiche
+    { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> },//ayoub
   ],
 
   null: [], // si jamais aucun rôle trouvé

@@ -1,25 +1,46 @@
 import jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
-export const authMiddleware = (req: any, res: any, next: any) => {
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id_user: number;
+        email: string;
+        role: string;
+      };
+    }
+  }
+}
+
+export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
 
   if (!header) {
-    return res.status(401).json({ message: "Missing token" });
+    return res.status(401).json({ success: false, message: "Token manquant" });
   }
 
   const token = header.split(" ")[1];
 
-  // Demo mode bypass for testing
-  if (token === "demo-token-12345") {
-    req.user = { id_user: 1, nom: "Demo User", role: "parent" };
-    return next();
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Token invalide" });
   }
 
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
-    req.user = decoded;
+    const secret = process.env.JWT_SECRET || "your-secret-key-change-in-prod";
+    const decoded = jwt.verify(token, secret) as any;
+    req.user = {
+      id_user: decoded.id_user,
+      email: decoded.email,
+      role: decoded.role,
+    };
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid token" });
+    const errorMessage = err instanceof jwt.TokenExpiredError
+      ? "Token expiré"
+      : "Token invalide";
+    return res.status(401).json({ success: false, message: errorMessage });
   }
 };

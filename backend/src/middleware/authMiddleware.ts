@@ -22,10 +22,13 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
   const token = header.split(" ")[1];
 
+<<<<<<< HEAD
   if (!token) {
     return res.status(401).json({ success: false, message: "Token invalide" });
   }
 
+=======
+>>>>>>> 9efa5e11f697bd9ff3163b4db8bb62d50806d030
   try {
     const secret = process.env.JWT_SECRET || "your-secret-key-change-in-prod";
     const decoded = jwt.verify(token, secret) as any;

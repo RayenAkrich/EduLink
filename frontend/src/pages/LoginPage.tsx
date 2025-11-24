@@ -6,10 +6,37 @@ import { useNavigate } from "react-router-dom";
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleLogin = (email: string, password: string) => {
+  const handleLogin = async(email: string, password: string) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Email ou mot de passe incorrect !");
+      }
+
+      const data = await res.json();
+
+      // 🟦 data doit contenir id_user, role, token
+      const { id_user, role, token } = data;
+
+      // 🔐 Stockage UI uniquement
+      localStorage.setItem("id_user", id_user);
+      localStorage.setItem("role", role);
+      localStorage.setItem("token", token);
     console.log("Login successful for:", email);
+    
     // Rediriger vers la page d'accueil après connexion réussie
-    navigate("/");
+    navigate("/dashboard");
+    } catch (error) {
+      console.error("Erreur login :", error);
+      alert("Échec de connexion !");
+    }
   };
 
   return (

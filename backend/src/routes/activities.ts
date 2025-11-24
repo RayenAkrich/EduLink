@@ -4,7 +4,7 @@ export const activitiesRoutes = express.Router();
 activitiesRoutes.get('/',(req,res)=>{
     res.json('')
 })
-activitiesRoutes.post('/',async(req,res)=>{
+activitiesRoutes.post('/',async(req,res,next)=>{
     try{
         const{
             titre,
@@ -25,8 +25,7 @@ activitiesRoutes.post('/',async(req,res)=>{
         }
     })
     } catch (error: any) {
-        const message = error instanceof Error ? error.message : String(error);
-        res.status(500).json({ error: message });
+        next(error);
     }
 
 })

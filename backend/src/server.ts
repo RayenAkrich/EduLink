@@ -1,8 +1,11 @@
 // src/server.ts
+import "source-map-support/register"
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { activitiesRoutes } from "./routes/activities";
+import errorHandler from "./middleware/errorHandler";
+import { notesRoutes } from "./routes/notes";
 
 dotenv.config();
 
@@ -18,8 +21,8 @@ app.use(express.json());
 // Health check
 app.get("/", (req,res) => res.json({ status: "ok" }));
 app.use('/activities',activitiesRoutes)
-
-
+app.use('/notes',notesRoutes)
+app.use(errorHandler)
 const PORT: number = Number(process.env.PORT) || 5000;
 
 app.listen(PORT, () => {

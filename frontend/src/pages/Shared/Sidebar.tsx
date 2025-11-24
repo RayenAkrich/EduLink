@@ -4,8 +4,11 @@ import { Home, Users, BookOpen, Calendar, ClipboardList } from "lucide-react";
 type Role = "ADMIN" | "ENSEIGNANT" | "PARENT" | null;
 
 interface SidebarProps {
+  hide:boolean;
   selectedTab: string;
   onSelectTab: (tab: string) => void;
+  setDash:React.Dispatch<React.SetStateAction<string>>;
+  dash:string;
 }
 
 const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element }[]> = {
@@ -37,30 +40,30 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
   null: [], // si jamais aucun rôle trouvé
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ selectedTab, onSelectTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({dash,setDash,hide,selectedTab, onSelectTab }) => {
   // 🔥 Récupération directe depuis localStorage
-  const role = (localStorage.getItem("user_role") as Role) || null;
-
+  const role:Role="PARENT";
+  
   const tabs = TABS_BY_ROLE[role];
 
   if (!role) {
     return (
-      <div className="h-screen w-60 bg-gray-900 text-white p-4">
+      <div className="h-screen w-60 bg-slate-900 text-white shadow-lg text-black p-4">
         <p>Aucun rôle trouvé.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-60 bg-gray-900 text-white p-4 flex flex-col gap-3">
+    <div className="h-screen w-60 bg-slate-900 text-white shadow-lg p-4 flex flex-col gap-3">
       <h2 className="text-xl font-bold mb-4">Espace {role}</h2>
 
       {tabs.map((tab) => (
         <button
           key={tab.id}
-          onClick={() => onSelectTab(tab.id)}
-          className={`flex items-center gap-2 p-2 rounded-xl transition-all
-            ${selectedTab === tab.id ? "bg-gray-700" : "hover:bg-gray-800"}`}
+          onClick={() => {setDash(String(tab.id).toLowerCase())}}
+          className={`flex items-center cursor-pointer gap-2 p-2 rounded-xl transition-all
+            ${String(dash ?? "").toLowerCase() === tab.id ? "bg-slate-700" : "hover:bg-slate-800"}`}
         >
           {tab.icon}
           <span>{tab.label}</span>

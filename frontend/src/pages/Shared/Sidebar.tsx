@@ -1,7 +1,8 @@
 import React from "react";
 import { Home, Users, BookOpen, Calendar, ClipboardList } from "lucide-react";
+import { useUser } from "./userContext";
 
-type Role = "ADMIN" | "ENSEIGNANT" | "PARENT" | null;
+type Role = "admin" | "enseignant" | "parent" | null;
 
 interface SidebarProps {
   hide:boolean;
@@ -12,7 +13,7 @@ interface SidebarProps {
 }
 
 const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element }[]> = {
-  ADMIN: [
+  admin: [
     { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> }, //ahmed
     { id: "users", label: "Gestion utilisateurs", icon: <Users size={18} /> }, //ahmed
     { id: "classes", label: "Gestion classes", icon: <BookOpen size={18} /> }, //akriche
@@ -22,7 +23,7 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
     { id: "Messaging", label: "Messagerie", icon: <Users size={18} /> }, //for admin-enseignant communication ayoub
   ],
 
-  ENSEIGNANT: [
+  enseignant: [
     { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> }, //hajji
     { id: "notes", label: "Gestion des notes", icon: <ClipboardList size={18} /> },//hajji
     { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> },
@@ -30,7 +31,7 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
     { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> },//ayoub
   ],
 
-  PARENT: [
+  parent: [
     { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> },//hajji
     { id: "notes", label: "Notes de mon enfant", icon: <ClipboardList size={18} /> },//hajji
     { id: "activites", label: "Absences / Activités", icon: <Calendar size={18} /> },//arkiche
@@ -41,8 +42,9 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
 };
 
 const Sidebar: React.FC<SidebarProps> = ({dash,setDash,hide,selectedTab, onSelectTab }) => {
-  // 🔥 Récupération directe depuis localStorage
-  const role:Role="PARENT";
+  const {user}= useUser();
+  if (!user) return <div>Sidebar...</div>;
+  const role:Role=user.role;
   
   const tabs = TABS_BY_ROLE[role];
 

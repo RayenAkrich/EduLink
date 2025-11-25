@@ -22,8 +22,8 @@ function Header({setHide,hide}:Props){
                 </svg>
                 <img src="" alt="image(enseignant/parent)" />
                 <div className="flex flex-col ">
-                    <p>nom</p>
-                    <p>Role</p>
+                    <p>{localStorage.getItem("nom")}</p>
+                    <p>{localStorage.getItem("role")}</p>
                 </div>
             </div>
             

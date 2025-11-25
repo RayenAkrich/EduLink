@@ -1,15 +1,20 @@
+import { useEffect, useState } from "react";
+import type { User } from "../Shared/types/User";
+import { useUser } from "../Shared/userContext";
+
 interface Props{
     setDash:React.Dispatch<React.SetStateAction<string>>;
 }
 export default function Dashboard({setDash}:Props){
+    const {user}= useUser();
     return(
         <>
             <div className="flex rounded shadow-sm mx-5 mt-5 p-10">
                 <img className="p-5" src="" alt="imgProfil" />
                 <div>
-                    <h2>Professeur Mohsen Tabes Tohsel</h2>
+                    <h2>Professeur {user?.nom} </h2>
                     <p>Formatique</p>
-                    <p className="before:content-['\f0e0'] before:font-['FontAwesome']">@gmail.com</p>
+                    <p className="before:content-['\f0e0'] before:font-['FontAwesome']">{user?.email}</p>
                 </div>
             </div>
             <div className="bg-white shadow-sm mx-5 ">

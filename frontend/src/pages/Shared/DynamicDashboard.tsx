@@ -1,17 +1,24 @@
-
+import { useSearchParams } from "react-router-dom";
 import DashboardParent from "../Parent/DashboardParent";
 import DashboardTeacher from "../Teacher/DashboardTeacher";
+import type { User } from "./types/User";
+import { useUser } from "./userContext";
 
 export default function DynamicDashboard() {
-  const role = localStorage.getItem("role");
+  const { user } = useUser();
+  
 
-  if (!role) {
+  if (!user) {
+    return <div>Chargement...</div>;
+  }
+
+  if (!user.role) {
     return <div>Erreur : aucun rôle trouvé</div>;
   }
 
-  switch (role) {
+  switch (user.role) {
     case "admin":
-      return <DashboardAdmin />;
+      return <DashboardTeacher />;
 
     case "parent":
       return <DashboardParent />;
@@ -22,4 +29,5 @@ export default function DynamicDashboard() {
     default:
       return <div>Rôle inconnu</div>;
   }
+  
 }

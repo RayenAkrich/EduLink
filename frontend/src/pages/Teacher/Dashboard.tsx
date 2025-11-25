@@ -10,7 +10,7 @@ export default function Dashboard({setDash}:Props){
     return(
         <>
             <div className="flex rounded shadow-sm mx-5 mt-5 p-10">
-                <img className="p-5" src="" alt="imgProfil" />
+                <img className="p-5 w-70" src="https://img.freepik.com/free-photo/young-handsome-man-holding-notebooks-concept-e-learning-courses_1258-26588.jpg" alt="imgProfil" />
                 <div>
                     <h2>Professeur {user?.nom} </h2>
                     <p>Formatique</p>
@@ -31,7 +31,7 @@ export default function Dashboard({setDash}:Props){
                 
                 </div>
                 
-                <p className="cursor-pointer text-gray-400" onClick={()=>setDash("ModifInfo")}>Modifier</p>
+                <p className="cursor-pointer text-gray-400" onClick={()=>setDash("modifinfo")}>Modifier</p>
             </div>
         </>
     )

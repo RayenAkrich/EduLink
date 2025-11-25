@@ -15,7 +15,7 @@ function ModifInfo({setDash}:Props){
                     <LabelInput label="Mot de Pass"/>
                 </div>
                 <div className="flex justify-center">
-                    <button className=" cursor-pointer m-7 px-10 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded" onClick={()=>setDash("DashboardTeacher")}>Confirm</button>
+                    <button className=" cursor-pointer m-7 px-10 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded" onClick={()=>setDash("dashboard")}>Confirm</button>
                 </div>
             </div>
         

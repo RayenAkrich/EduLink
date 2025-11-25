@@ -2,17 +2,17 @@ import React from "react";
 import { Home, Users, BookOpen, Calendar, ClipboardList } from "lucide-react";
 import { useUser } from "./userContext";
 
-type Role = "admin" | "enseignant" | "parent" | null;
+type Role = "admin" | "enseignant" | "parent";
 
 interface SidebarProps {
-  hide:boolean;
-  selectedTab: string;
-  onSelectTab: (tab: string) => void;
-  setDash:React.Dispatch<React.SetStateAction<string>>;
-  dash:string;
+  hide?: boolean;
+  selectedTab?: string;
+  onSelectTab?: (tab: string) => void;
+  setDash: React.Dispatch<React.SetStateAction<string>>;
+  dash: string;
 }
 
-const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element }[]> = {
+const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: React.ReactNode }[]> = {
   admin: [
     { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> }, //ahmed
     { id: "users", label: "Gestion utilisateurs", icon: <Users size={18} /> }, //ahmed
@@ -20,7 +20,7 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
     { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> }, //akriche
     { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> }, //ayoub
     { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> }, //ayoub
-    { id: "Messaging", label: "Messagerie", icon: <Users size={18} /> }, //for admin-enseignant communication ayoub
+    { id: "messaging", label: "Messagerie", icon: <Users size={18} /> }, //for admin-enseignant communication ayoub
   ],
 
   enseignant: [
@@ -29,6 +29,7 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
     { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> },
     { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> },//ayoub
     { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> },//ayoub
+    { id: "messaging", label: "Messagerie", icon: <Users size={18} /> }, //for admin-enseignant communication ayoub
   ],
 
   parent: [
@@ -36,12 +37,13 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: JSX.Element 
     { id: "notes", label: "Notes de mon enfant", icon: <ClipboardList size={18} /> },//hajji
     { id: "activites", label: "Absences / Activités", icon: <Calendar size={18} /> },//arkiche
     { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> },//ayoub
+    { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> },//ayoub
   ],
 
-  null: [], // si jamais aucun rôle trouvé
+  // 'null' not included: role must be one of specified values
 };
 
-const Sidebar: React.FC<SidebarProps> = ({dash,setDash,hide,selectedTab, onSelectTab }) => {
+const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
   const {user}= useUser();
   if (!user) return <div>Sidebar...</div>;
   const role:Role=user.role;

@@ -1,16 +1,15 @@
-// src/server.ts
-import "source-map-support/register"
+import "source-map-support/register";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+
 import { activitiesRoutes } from "./routes/activities";
-import errorHandler from "./middleware/errorHandler";
 import { notesRoutes } from "./routes/notes";
 import authRoutes from "./routes/auth";
+import errorHandler from "./middleware/errorHandler";
 
 dotenv.config();
 
-// Minimal shim to avoid requiring @types/node in this quick fix
 declare const process: any;
 
 const app = express();
@@ -19,17 +18,15 @@ app.use(cors());
 app.use(express.json());
 
 // Health check
-app.get("/", (req,res) => res.json({ status: "ok" }));
-app.use('/activities',activitiesRoutes)
-app.use('/notes',notesRoutes)
-app.use(errorHandler)
+app.get("/", (_, res) => res.json({ status: "ok" }));
 
-
-// Auth routes
+// Routes
+app.use("/activities", activitiesRoutes);
+app.use("/notes", notesRoutes);
 app.use("/api/auth", authRoutes);
 
-// Other routes
-app.use("/activities", activitiesRoutes);
+// Error handler — MUST be last
+app.use(errorHandler);
 
 const PORT: number = Number(process.env.PORT) || 5000;
 

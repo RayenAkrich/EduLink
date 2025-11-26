@@ -4,6 +4,8 @@ import DashboardChoix from "./DashboardChoix";
 import Notes from "./Notes";
 import Dashboard from "./Dashboard";
 import type { Eleve } from "../Shared/types/Eleve";
+import NotificationsPage from "../../components/NotificationsPage";
+import Announcements from "../../components/Announcements";
 
 export default function DashboardParent() {
     const [dash, setDash] = useState<string>("Dashboard");
@@ -18,6 +20,14 @@ export default function DashboardParent() {
                 <DashboardChoix selectedChild={selectedChild} setSelectedChild={setSelectedChild} />
             );
             break;
+          case "notifications":
+              content = <NotificationsPage onNavigate={setDash} />;
+          break;
+    
+
+          case "announces":
+            content=<Announcements/>;
+          break;
 
         case "dashboard":
         default:

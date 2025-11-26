@@ -27,6 +27,7 @@ model User {
   messages_envoyes Message[] @relation("MessagesEnvoyes")
   messages_recus  Message[] @relation("MessagesRecus")
   annonces       Annonce[]
+  notifications Notification[] @relation("UserNotifications")
 }
 
 enum Role {
@@ -161,4 +162,28 @@ model Annonce {
 
   auteur User   @relation(fields: [id_auteur], references: [id_user])
   classe Classe? @relation(fields: [id_classe], references: [id_classe])
+}
+
+
+// ===================== NOTIFICATIONS =====================
+model Notification {
+  id_notification  Int      @id @default(autoincrement())
+  id_user          Int
+  type             NotificationType
+  titre            String
+  contenu          String
+  reference_id     Int?     // ID of the related entity (message, announcement, etc.)
+  reference_type   String?  // Type: "message", "announcement", "note", etc.
+  lu               Boolean  @default(false)
+  date_creation    DateTime @default(now())
+
+  user User @relation("UserNotifications", fields: [id_user], references: [id_user])
+}
+
+enum NotificationType {
+  message
+  announcement
+  note
+  absence
+  system
 }

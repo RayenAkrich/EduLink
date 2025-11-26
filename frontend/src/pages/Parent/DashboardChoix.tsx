@@ -4,17 +4,19 @@ import type { Eleve } from "../Shared/types/Eleve";
 import Dashboard from "./Dashboard";
 import SelectChild from "./SelectChild";
 import { useUser } from "../Shared/userContext";
-
-export default function DashboardChoix(){
+interface Props{
+  selectedChild:Eleve|null ;
+  setSelectedChild:(child: Eleve|null)=>void;
+}
+export default function DashboardChoix({selectedChild,setSelectedChild}:Props){
   const [children, setChildren] = useState<Eleve[]>([]);
-  const [selectedChild, setSelectedChild] = useState<Eleve | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const {user} = useUser();
-  const [reload, setReload] = useState(0);
+  
 
   useEffect(()=>{
-    let cancelled = false;
     const id = user?.id_user;
     if (!id) {
       setError("Utilisateur non identifié");
@@ -22,72 +24,39 @@ export default function DashboardChoix(){
       return;
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:5000";
-    const tryUrls = [
-      `${apiUrl}/notes/parent/${id}/children`,
-      `${apiUrl}/parent/${id}/children`,
-    ];
-
     const fetchChildren = async () => {
-      setLoading(true);
-      setError(null);
-      for (const url of tryUrls) {
-        try {
-          console.log("Trying fetch:", url);
-          const res = await fetch(url);
-          const text = await res.text();
-          console.log("Response for", url, res.status, text.slice(0,200));
-          if (!res.ok) {
-            // try next url
-            continue;
-          }
-          // parse JSON safely
-          const data = JSON.parse(text) as Eleve[];
-          if (!cancelled) {
-            setChildren(data ?? []);
-            setLoading(false);
-            setError(null);
-          }
-          return;
-        } catch (e) {
-          console.warn("Fetch error for", url, e);
-          // try next url
-          continue;
+      try {
+        const apiUrl = "http://localhost:5000";
+        const res = await fetch(`${apiUrl}/dashboard/parent/${id}/children`);
+        if (!res.ok) {
+          throw new Error(`fetch failed: ${res.status}`);
         }
-      }
-      if (!cancelled) {
+        const enfants = (await res.json()) as Eleve[];
+        console.log("children fetched:", enfants);
+        setChildren(enfants ?? []);
+      } catch (err) {
+        console.error("Erreur fetch children:", err);
+        setError("Impossible de récupérer les enfants");
         setChildren([]);
-        setError("Impossible de récupérer les enfants (endpoint introuvable ou erreur serveur)");
+      } finally {
         setLoading(false);
       }
     };
 
     fetchChildren();
-    return () => { cancelled = true; };
-    // re-run when user or reload changes
-  }, [user, reload]);
+  }, []);
 
+  useEffect(() => {
+    if (!selectedChild && children.length === 1) {
+      setSelectedChild(children[0]);
+    }
+    // ne pas inclure setSelectedChild dans les deps pour éviter double appel si parent la redéfinit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children, selectedChild]);
   const hasOneChild = children.length === 1;
 
   if (loading) return <div className="p-6">Chargement…</div>;
-  if (error) return (
-    <div className="p-6 text-red-600">
-      {error}
-      <div className="mt-4">
-        <button className="px-4 py-2 bg-slate-700 text-white rounded" onClick={()=>setReload(r=>r+1)}>Rafraîchir</button>
-      </div>
-    </div>
-  );
-
-  if (children.length === 0) {
-    return (
-      <div className="p-6">
-        <h2 className="text-lg mb-4">Choisissez un enfant</h2>
-        <p className="text-gray-600">Aucun enfant trouvé pour ce compte.</p>
-        <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded" onClick={()=>setReload(r=>r+1)}>Rafraîchir</button>
-      </div>
-    );
-  }
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
 
   return (
     <div>

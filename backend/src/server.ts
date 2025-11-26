@@ -7,6 +7,7 @@ import { activitiesRoutes } from "./routes/activities";
 import errorHandler from "./middleware/errorHandler";
 import { notesRoutes } from "./routes/notes";
 import authRoutes from "./routes/auth";
+import { dashboardRoutes } from "./routes/dashboard";
 
 dotenv.config();
 
@@ -27,7 +28,7 @@ app.use(errorHandler)
 
 // Auth routes
 app.use("/api/auth", authRoutes);
-
+app.use("/dashboard",dashboardRoutes);
 // Other routes
 app.use("/activities", activitiesRoutes);
 

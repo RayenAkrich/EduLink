@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-import type { User } from "../Shared/types/User";
 import { useUser } from "../Shared/userContext";
 
 interface Props{
@@ -24,10 +22,9 @@ export default function Dashboard({setDash}:Props){
             <div className="bg-white flex justify-between rounded m-5 shadow-sm p-5">
                 <div>
                     <h1 className="text-lg p-2">Information personnel:</h1>
-                    <p className="text-sm p-2">Nom : Mohsen</p>
-                    <p className="text-sm p-2">Prénom : Mohsen</p>
-                    <p className="text-sm p-2">Adresse email : Mohsen</p>
-                    <p className="text-sm p-2">Mobile : Mohsen</p>
+                    <p className="text-sm p-2">Nom : {user?.nom}</p>
+                    <p className="text-sm p-2">Adresse email : {user?.email}</p>
+                    <p className="text-sm p-2">Date de creation : {user?.date_creation}</p>
                 
                 </div>
                 

@@ -264,6 +264,18 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
       });
     }
 
+    // Delete associated schedule file if exists
+    const storageDir = path.join(process.cwd(), "..", "storage");
+    const filePattern = getSchedulePattern(classe.nom_classe, classe.annee_scolaire);
+    const possibleExtensions = ['.pdf', '.xlsx', '.csv', '.png', '.jpg', '.jpeg'];
+    
+    for (const ext of possibleExtensions) {
+      const filePath = path.join(storageDir, `${filePattern}${ext}`);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
     await prisma.classe.delete({
       where: { id_classe: classId }
     });

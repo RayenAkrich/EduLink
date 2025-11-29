@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../Shared/Layout";
 import DashboardChoix from "./DashboardChoix";
 import Notes from "./Notes";
@@ -8,8 +8,16 @@ import NotificationsPage from "../../components/NotificationsPage";
 import Announcements from "../../components/Announcements";
 
 export default function DashboardParent() {
-    const [dash, setDash] = useState<string>("Dashboard");
+    // Récupérer la dernière page visitée depuis localStorage, ou "Dashboard" par défaut
+    const [dash, setDash] = useState<string>(() => {
+        return localStorage.getItem('parent_current_page') || 'Dashboard';
+    });
     const [selectedChild, setSelectedChild] = useState<Eleve | null>(null);
+
+    // Sauvegarder la page courante dans localStorage à chaque changement
+    useEffect(() => {
+        localStorage.setItem('parent_current_page', dash);
+    }, [dash]);
 
     let content;
 

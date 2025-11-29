@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Dashboard from "./Dashboard";
 import ModifInfo from "./ModifInfo";
 import Layout from "../Shared/Layout";
@@ -6,8 +6,18 @@ import Notes from "./Notes";
 import NotificationsPage from "../../components/NotificationsPage";
 import Announcements from "../../components/Announcements";
 import Messaging from "../../components/Messaging";
+
 export default function DashboardTeacher(){
-    const [dash,setDash]=useState("dashboard");
+    // Récupérer la dernière page visitée depuis localStorage, ou "dashboard" par défaut
+    const [dash, setDash] = useState(() => {
+        return localStorage.getItem('teacher_current_page') || 'dashboard';
+    });
+
+    // Sauvegarder la page courante dans localStorage à chaque changement
+    useEffect(() => {
+        localStorage.setItem('teacher_current_page', dash);
+    }, [dash]);
+
     let content;
     switch (dash) {
                 case "modifinfo":

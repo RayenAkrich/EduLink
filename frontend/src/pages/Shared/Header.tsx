@@ -281,8 +281,8 @@ function Header({ setHide, hide, onNavigate }: Props) {
 
         <img src="https://img.freepik.com/free-photo/young-handsome-man-holding-notebooks-concept-e-learning-courses_1258-26588.jpg" alt="image(enseignant/parent)" className="w-10 rounded-full object-fit bg-slate-200" />
         <div className="flex flex-col">
-          <p className="font-medium">{localStorage.getItem("nom")}</p>
-          <p className="text-sm text-slate-500">{localStorage.getItem("role")}</p>
+          <p className="font-medium">{user?.nom}</p>
+          <p className="text-sm text-slate-500">{user?.role}</p>
         </div>
       </div>
     </div>

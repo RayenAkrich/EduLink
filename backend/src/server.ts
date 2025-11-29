@@ -72,7 +72,7 @@ app.use("/dashboard",dashboardRoutes);
 // Other routes
 // Routes
 app.use("/activities", activitiesRoutes);
-app.use("/notes", notesRoutes);
+app.use("/api/notes", notesRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/notifications", notificationsRoutes);

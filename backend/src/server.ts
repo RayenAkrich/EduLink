@@ -8,6 +8,7 @@ import { Server } from "socket.io";
 import { activitiesRoutes } from "./routes/activities";
 import { notesRoutes } from "./routes/notes";
 import authRoutes from "./routes/auth";
+import { dashboardRoutes } from "./routes/dashboard";
 import { messagesRoutes } from "./routes/messages";
 import { notificationsRoutes } from "./routes/notifications";
 import { announcementsRoutes } from "./routes/announcements";
@@ -57,8 +58,15 @@ app.use(express.json());
 
 app.get("/", (_, res) => res.json({ status: "ok" }));
 
+
+
+// Auth routes
+
+app.use("/dashboard",dashboardRoutes);
+// Other routes
+// Routes
 app.use("/activities", activitiesRoutes);
-app.use("/notes", notesRoutes);
+app.use("/api/notes", notesRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/notifications", notificationsRoutes);

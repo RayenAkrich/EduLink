@@ -63,15 +63,24 @@ model Classe {
 
 // ===================== ENSEIGNEMENTS =====================
 model Enseignement {
-  id_enseignement Int      @id @default(autoincrement())
-  id_enseignant   Int
-  id_classe       Int
-  matiere         String
-
-  enseignant User   @relation(fields: [id_enseignant], references: [id_user])
-  classe     Classe @relation(fields: [id_classe], references: [id_classe])
-  notes      Note[]
+  id_enseignement      Int      @id @default(autoincrement())
+  id_enseignant        Int
+  id_classe            Int
+  matiere   String
+  id_coefficient_matiere Int    @default(1)
+  enseignant           User       @relation(fields: [id_enseignant], references: [id_user])
+  classe               Classe     @relation(fields: [id_classe], references: [id_classe])
+  coefficient_matiere  CoefficientMatiere @relation(fields: [id_coefficient_matiere], references: [id])
+  notes                Note[]
 }
+
+model CoefficientMatiere {
+  id        Int     @id @default(autoincrement())
+  
+  coefficient Float
+  enseignements Enseignement[]
+}
+
 
 // ===================== ELEVES_CLASSES =====================
 model ElevesClasse {

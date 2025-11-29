@@ -1,54 +1,176 @@
-
 import { useEffect, useMemo, useState } from "react";
+import { useUser } from "../Shared/userContext";
 
 type Student = { id: string; nom: string; prenom?: string };
 type NoteRow = { studentId: string; oral?: number | null; controle?: number | null; synthese?: number | null };
 
-export default function Notes() {
-  // mock data -> remplacer par fetch depuis API
-  const classes = [{ id: "c1", label: "3ème A" }, { id: "c2", label: "4ème B" }];
-  const subjects = [{ id: "math", label: "Mathématiques" }, { id: "fr", label: "Français" }];
-  const mockStudents: Record<string, Student[]> = {
-    c1: [
-      { id: "s1", nom: "Ben", prenom: "Ali" },
-      { id: "s2", nom: "Smith", prenom: "John" },
-      { id: "s3", nom: "Diaz", prenom: "Maya" },
-    ],
-    c2: [
-      { id: "s4", nom: "Nguyen", prenom: "Linh" },
-      { id: "s5", nom: "Khan", prenom: "Sara" },
-    ],
-  };
+// Type correspondant à votre backend
+type TeachingData = {
+  classeId: number;
+  classe: string;
+  subject: string;
+  nomEleves: Student[];
+}
 
-  const [selectedClass, setSelectedClass] = useState(classes[0].id);
-  const [selectedSubject, setSelectedSubject] = useState(subjects[0].id);
+export default function Notes() {
+  const { user } = useUser();
+  
+  // États pour les données dynamiques
+  const [allData, setAllData] = useState<TeachingData[]>([]);
+  const [classes, setClasses] = useState<{ id: string; label: string }[]>([]);
+  const [subjects, setSubjects] = useState<{ id: string; label: string }[]>([]);
+  
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [assessmentType, setAssessmentType] = useState<"oral" | "controle" | "synthese">("controle");
 
   const [students, setStudents] = useState<Student[]>([]);
   const [rows, setRows] = useState<Record<string, NoteRow>>({});
+  const [allNotes, setAllNotes] = useState<Record<string, Record<string, NoteRow>>>({});  // { matiere: { studentId: NoteRow } }
 
-  // load students when class change
+  // 1. Charger toutes les données au montage
   useEffect(() => {
-    const list = mockStudents[selectedClass] ?? [];
-    setStudents(list);
-    // init rows for students (keep existing values if present)
-    const newRows: Record<string, NoteRow> = {};
-    list.forEach((s) => {
-      newRows[s.id] = rows[s.id] ?? { studentId: s.id, oral: null, controle: null, synthese: null };
-    });
-    setRows(newRows);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClass]);
+    const fetchAllData = async () => {
+      console.log("User connecté:", user);
+      if (!user?.id_user) {
+        console.log("Aucun utilisateur connecté ou pas d'ID");
+        return;
+      }
+      
+      console.log("Chargement des données pour l'enseignant ID:", user.id_user);
+      
+      try {
+        const url = `http://localhost:5000/api/notes/ClassMatiere/${user.id_user}`;
+        console.log("URL appelée:", url);
+        
+        const res = await fetch(url);
+        console.log("Statut de la réponse:", res.status);
+        
+        if (!res.ok) {
+          console.error("Erreur HTTP:", res.status, res.statusText);
+          throw new Error(`Erreur HTTP: ${res.status}`);
+        }
+        
+        const data: TeachingData[] = await res.json();
+        console.log("Données reçues du backend:", data);
+        
+        setAllData(data);
+
+        // Extraire les classes uniques
+        const uniqueClassesMap = new Map();
+        data.forEach(d => {
+          uniqueClassesMap.set(d.classeId.toString(), { 
+            id: d.classeId.toString(), 
+            label: d.classe 
+          });
+        });
+        const uniqueClasses = Array.from(uniqueClassesMap.values());
+        console.log("Classes extraites:", uniqueClasses);
+        
+        setClasses(uniqueClasses);
+        
+        // Sélectionner la première classe par défaut
+        if (uniqueClasses.length > 0) {
+          setSelectedClass(uniqueClasses[0].id);
+          console.log("Classe sélectionnée par défaut:", uniqueClasses[0].id);
+        }
+
+      } catch (e) {
+        console.error("Erreur lors du fetch:", e);
+      }
+    };
+    
+    fetchAllData();
+  }, [user]);
+
+  // 2. Mettre à jour matières et élèves selon la classe sélectionnée
+  useEffect(() => {
+    console.log("Changement de classe sélectionnée:", selectedClass);
+    console.log("Données disponibles:", allData.length);
+    
+    if (!selectedClass || allData.length === 0) return;
+
+    // Filtrer les données pour la classe sélectionnée
+    const classData = allData.filter(d => d.classeId.toString() === selectedClass);
+    console.log("Données pour la classe sélectionnée:", classData);
+
+    // Extraire les matières disponibles pour cette classe
+    const availableSubjects = classData.map(d => ({ 
+      id: d.subject, 
+      label: d.subject 
+    }));
+    console.log("Matières disponibles:", availableSubjects);
+    
+    setSubjects(availableSubjects);
+    
+    // Sélectionner la première matière par défaut
+    if (availableSubjects.length > 0) {
+      setSelectedSubject(availableSubjects[0].id);
+      console.log("Matière sélectionnée par défaut:", availableSubjects[0].id);
+    }
+
+    // Récupérer les élèves (tous les enseignements d'une classe ont les mêmes élèves)
+    if (classData.length > 0) {
+      const studentsList = classData[0].nomEleves;
+      console.log("Liste des élèves:", studentsList);
+      
+      setStudents(studentsList);
+
+      // Initialiser les lignes de notes
+      const newRows: Record<string, NoteRow> = {};
+      studentsList.forEach((s) => {
+        newRows[s.id] = { 
+          studentId: s.id, 
+          oral: null, 
+          controle: null, 
+          synthese: null 
+        };
+      });
+      setRows(newRows);
+      console.log("Lignes de notes initialisées:", newRows);
+    }
+  }, [selectedClass, allData]);
+
+  // 3. Charger toutes les notes une seule fois quand classe change (PAS la date !)
+  useEffect(() => {
+    if (selectedClass && students.length > 0 && subjects.length > 0) {
+      loadAllNotes();
+    }
+  }, [selectedClass, students.length, subjects.length]);
+
+  // 4. Mettre à jour les lignes affichées quand la matière change (filtrage local)
+  useEffect(() => {
+    if (selectedSubject && students.length > 0) {
+      // Récupérer les notes de la matière sélectionnée depuis le cache
+      const notesForSubject = allNotes[selectedSubject] || {};
+      
+      const newRows: Record<string, NoteRow> = {};
+      students.forEach((s) => {
+        newRows[s.id] = notesForSubject[s.id] || { 
+          studentId: s.id, 
+          oral: null, 
+          controle: null, 
+          synthese: null 
+        };
+      });
+      setRows(newRows);
+    }
+  }, [selectedSubject, students, allNotes]);
 
   const setNote = (studentId: string, field: keyof NoteRow, value: string) => {
-    // allow empty, otherwise number between 0 and 20
     const n = value === "" ? null : Math.max(0, Math.min(20, Number(value)));
-    setRows((prev) => ({ ...prev, [studentId]: { ...(prev[studentId] ?? { studentId }), [field]: n } }));
+    setRows((prev) => ({ 
+      ...prev, 
+      [studentId]: { ...(prev[studentId] ?? { studentId }), [field]: n } 
+    }));
   };
 
   const averageOf = (r: NoteRow) => {
-    const vals = [r.oral, r.controle, 2*r.synthese].filter((v) => typeof v === "number") as number[];
+    const vals = [
+      r.oral, 
+      r.controle, 
+      r.synthese ? 2 * r.synthese : null
+    ].filter((v) => typeof v === "number") as number[];
     if (vals.length === 0) return null;
     const avg = vals.reduce((a, b) => a + b, 0) / (1+vals.length);
     return Math.round(avg * 10) / 10;
@@ -56,20 +178,133 @@ export default function Notes() {
 
   const canSave = useMemo(() => students.length > 0, [students]);
 
-  const handleSave = () => {
-    // Préparer payload -> remplacer par appel API
+  // Fonction pour charger toutes les notes de toutes les matières en une seule fois (optimisé)
+  const loadAllNotes = async () => {
+    if (!selectedClass || !date || subjects.length === 0) {
+      console.log('Pas assez de paramètres pour charger les notes');
+      return;
+    }
+
+    try {
+      console.log(`⚡ Chargement optimisé de TOUTES les notes pour classe ${selectedClass}, date ${date}`);
+      
+      // Charger les notes pour toutes les matières disponibles EN PARALLÈLE
+      const notesPromises = subjects.map(async (subject) => {
+        const res = await fetch(`http://localhost:5000/api/notes/existing/${selectedClass}/${encodeURIComponent(subject.id)}/${date}`);
+        if (res.ok) {
+          const notes: NoteRow[] = await res.json();
+          return { matiere: subject.id, notes };
+        }
+        return { matiere: subject.id, notes: [] };
+      });
+      
+      const results = await Promise.all(notesPromises);
+      console.log('✅ Toutes les notes chargées:', results);
+      
+      // Organiser les notes par matière dans un cache
+      const notesByMatiere: Record<string, Record<string, NoteRow>> = {};
+      results.forEach(({ matiere, notes }) => {
+        const notesMap: Record<string, NoteRow> = {};
+        notes.forEach(note => {
+          if (note.studentId) {
+            notesMap[note.studentId] = {
+              studentId: note.studentId,
+              oral: note.oral ?? null,
+              controle: note.controle ?? null,
+              synthese: note.synthese ?? null
+            };
+          }
+        });
+        notesByMatiere[matiere] = notesMap;
+      });
+      
+      setAllNotes(notesByMatiere);
+      console.log('📦 Notes mises en cache par matière:', notesByMatiere);
+      
+    } catch (e) {
+      console.error('Erreur réseau lors du chargement des notes:', e);
+    }
+  };
+
+  // Fonction pour charger les notes existantes
+  const loadExistingNotes = async () => {
+    if (!selectedClass || !selectedSubject || !date) {
+      console.log('Pas assez de param\u00e8tres pour charger les notes existantes');
+      return;
+    }
+
+    try {
+      console.log(`Chargement des notes existantes pour classe ${selectedClass}, mati\u00e8re ${selectedSubject}, date ${date}`);
+      
+      const res = await fetch(`http://localhost:5000/api/notes/existing/${selectedClass}/${encodeURIComponent(selectedSubject)}/${date}`);
+      
+      if (res.ok) {
+        const existingNotes: NoteRow[] = await res.json();
+        console.log('Notes existantes charg\u00e9es:', existingNotes);
+        
+        // Fusionner avec les lignes actuelles
+        setRows(prev => {
+          const newRows = { ...prev };
+          
+          existingNotes.forEach(note => {
+            if (note.studentId) {
+              newRows[note.studentId] = {
+                studentId: note.studentId,
+                oral: note.oral,
+                controle: note.controle,
+                synthese: note.synthese
+              };
+            }
+          });
+          
+          return newRows;
+        });
+      } else {
+        console.error('Erreur lors du chargement des notes existantes:', res.status);
+      }
+    } catch (e) {
+      console.error('Erreur r\u00e9seau lors du chargement des notes existantes:', e);
+    }
+  };
+
+  const handleSave = async () => {
     const payload = {
       classe: selectedClass,
       matiere: selectedSubject,
       date,
-      assessmentType,
+      assessmentType: "controle", // Valeur factice, le backend traitera tous les types
       notes: Object.values(rows),
     };
-    console.log("Saving notes", payload);
-    // TODO: POST /api/notes ...
-    alert("Notes sauvegardées (console.log)");
+
+    console.log('=== FRONTEND SAUVEGARDE ===');
+    console.log('Payload envoyé:', payload);
+    console.log('Rows état actuel:', rows);
+
+    try {
+      // TODO: Créer la route POST pour sauvegarder
+      const res = await fetch("http://localhost:5000/api/notes/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Ajouter token si nécessaire : "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert("Notes sauvegardées avec succès !");
+        // Recharger toutes les notes pour afficher les changements
+        setTimeout(() => loadAllNotes(), 500);
+      } else {
+        alert("Erreur lors de la sauvegarde");
+      }
+    } catch (e) {
+      console.error("Erreur sauvegarde:", e);
+      alert("Erreur réseau");
+    }
   };
 
+  // ...existing code... (le reste du JSX reste identique)
   return (
     <div className="p-6">
       <div className="max-w-5xl w-full bg-white rounded-lg shadow-md overflow-hidden">
@@ -79,8 +314,19 @@ export default function Notes() {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Debug info - à supprimer plus tard */}
+          <div className="bg-gray-100 p-3 text-xs rounded">
+            <div><strong>Debug Info:</strong></div>
+            <div>Utilisateur: {user?.nom} (ID: {user?.id_user}, Rôle: {user?.role})</div>
+            <div>Classes disponibles: {classes.length}</div>
+            <div>Matières disponibles: {subjects.length}</div>
+            <div>Élèves: {students.length}</div>
+            <div>Classe sélectionnée: {selectedClass}</div>
+            <div>Matière sélectionnée: {selectedSubject}</div>
+          </div>
+
           {/* controls */}
-          <div className="grid md:grid-cols-4 gap-4 items-end">
+          <div className="grid md:grid-cols-3 gap-4 items-end">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Classe</label>
               <select
@@ -88,6 +334,7 @@ export default function Notes() {
                 onChange={(e) => setSelectedClass(e.target.value)}
                 className="w-full border rounded-md p-2 bg-white"
               >
+                <option value="">Sélectionnez une classe</option>
                 {classes.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
@@ -99,6 +346,7 @@ export default function Notes() {
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 className="w-full border rounded-md p-2 bg-white"
               >
+                <option value="">Sélectionnez une matière</option>
                 {subjects.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
             </div>
@@ -107,40 +355,23 @@ export default function Notes() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-md p-2 bg-white" />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <div className="flex gap-2">
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="radio" name="type" checked={assessmentType === "oral"} onChange={() => setAssessmentType("oral")} />
-                  Oral
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="radio" name="type" checked={assessmentType === "controle"} onChange={() => setAssessmentType("controle")} />
-                  Contrôle
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm">
-                  <input type="radio" name="type" checked={assessmentType === "synthese"} onChange={() => setAssessmentType("synthese")} />
-                  Synthèse
-                </label>
-              </div>
-            </div>
           </div>
 
-          {/* students table */}
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto border-collapse">
-              <thead>
-                <tr className="text-left text-sm text-gray-600">
-                  <th className="py-3 px-3">Élève</th>
-                  <th className="py-3 px-3">Oral</th>
-                  <th className="py-3 px-3">Contrôle</th>
-                  <th className="py-3 px-3">Synthèse</th>
-                  <th className="py-3 px-3">Moyenne</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((s) => {
+          {/* students table - afficher seulement si une classe est sélectionnée */}
+          {selectedClass && selectedSubject ? (
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto border-collapse">
+                <thead>
+                  <tr className="text-left text-sm text-gray-600">
+                    <th className="py-3 px-3">Élève</th>
+                    <th className="py-3 px-3">Oral</th>
+                    <th className="py-3 px-3">Contrôle</th>
+                    <th className="py-3 px-3">Synthèse</th>
+                    <th className="py-3 px-3">Moyenne</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((s) => {
                   const r = rows[s.id] ?? { studentId: s.id, oral: null, controle: null, synthese: null };
                   const avg = averageOf(r);
                   return (
@@ -155,7 +386,7 @@ export default function Notes() {
                           step="0.5"
                           value={r.oral ?? ""}
                           onChange={(e) => setNote(s.id, "oral", e.target.value)}
-                          className={`w-20 border rounded-md p-1 ${assessmentType === "oral" ? "ring-2 ring-blue-200" : ""}`}
+                          className="w-20 border rounded-md p-1"
                           placeholder="-"
                         />
                       </td>
@@ -168,7 +399,7 @@ export default function Notes() {
                           step="0.5"
                           value={r.controle ?? ""}
                           onChange={(e) => setNote(s.id, "controle", e.target.value)}
-                          className={`w-20 border rounded-md p-1 ${assessmentType === "controle" ? "ring-2 ring-blue-200" : ""}`}
+                          className="w-20 border rounded-md p-1"
                           placeholder="-"
                         />
                       </td>
@@ -181,7 +412,7 @@ export default function Notes() {
                           step="0.5"
                           value={r.synthese ?? ""}
                           onChange={(e) => setNote(s.id, "synthese", e.target.value)}
-                          className={`w-20 border rounded-md p-1 ${assessmentType === "synthese" ? "ring-2 ring-blue-200" : ""}`}
+                          className="w-20 border rounded-md p-1"
                           placeholder="-"
                         />
                       </td>
@@ -198,17 +429,24 @@ export default function Notes() {
               </tbody>
             </table>
           </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              Veuillez sélectionner une classe et une matière pour afficher les notes.
+            </div>
+          )}
 
           {/* actions */}
-          <div className="flex items-center justify-center">
-            <button
-              disabled={!canSave}
-              onClick={handleSave}
-              className={`px-6 py-2 rounded-full text-white shadow-md ${canSave ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"}`}
-            >
-              Sauvegarder
-            </button>
-          </div>
+          {selectedClass && selectedSubject && (
+            <div className="flex items-center justify-center">
+              <button
+                disabled={!canSave}
+                onClick={handleSave}
+                className={`px-6 py-2 rounded-full text-white shadow-md ${canSave ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"}`}
+              >
+                Sauvegarder
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

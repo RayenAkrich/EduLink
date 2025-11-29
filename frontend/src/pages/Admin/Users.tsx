@@ -170,7 +170,6 @@ const Users: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">👥 Gestion des utilisateurs</h1>
-        <p className="text-gray-600">Créez, modifiez et supprimez des comptes utilisateur</p>
       </div>
 
       {/* Messages */}

@@ -13,9 +13,9 @@ export default function Layout({children,setDash,dash}:Props){
         <div className="flex flex-col h-screen overflow-hidden">
             <Header hide={hide} setHide={setHide} onNavigate={(tab:string)=>setDash(tab)} />
             <div className="flex flex-1 overflow-hidden">
-                <div 
-                    className={`transition-all duration-300 ease-in-out overflow-y-auto ${
-                        hide ? '-ml-60 w-0 opacity-0' : 'ml-0 w-60 opacity-100'
+                <div
+                    className={`transition-all duration-300 ease-in-out flex-shrink-0 overflow-hidden ${
+                        hide ? 'w-0 opacity-0' : 'w-60 opacity-100'
                     }`}
                 >
                     <Sidebar dash={dash} setDash={setDash} />

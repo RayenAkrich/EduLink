@@ -69,6 +69,7 @@ interface Coefficient {
 
 const ClassesManagement: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<ClassDetails | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -76,6 +77,7 @@ const ClassesManagement: React.FC = () => {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddEnseignementModal, setShowAddEnseignementModal] = useState(false);
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState<boolean>(false);
   const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
   const [availableCoefficients, setAvailableCoefficients] = useState<Coefficient[]>([]);
   
@@ -97,6 +99,7 @@ const ClassesManagement: React.FC = () => {
 
   const fetchClasses = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       const response = await fetch("http://localhost:5000/api/classes", {
         headers: { Authorization: `Bearer ${token}` }
@@ -108,6 +111,8 @@ const ClassesManagement: React.FC = () => {
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast.error("Erreur lors du chargement des classes");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -130,6 +135,7 @@ const ClassesManagement: React.FC = () => {
 
   const fetchAvailableStudents = async () => {
     try {
+      setLoadingStudents(true);
       const token = localStorage.getItem("token");
       const response = await fetch("http://localhost:5000/api/students", {
         headers: { Authorization: `Bearer ${token}` }
@@ -140,6 +146,8 @@ const ClassesManagement: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching students:", error);
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
@@ -496,7 +504,24 @@ const ClassesManagement: React.FC = () => {
 
         {/* Classes Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredClasses.length === 0 ? (
+          {loading ? (
+            [...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                  <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                </div>
+                <div className="h-9 bg-slate-200 rounded"></div>
+              </div>
+            ))
+          ) : filteredClasses.length === 0 ? (
             <div className="col-span-full bg-white rounded-lg shadow-sm p-12 text-center">
               <BookOpen size={64} className="mx-auto mb-4 text-slate-300" />
               <p className="text-slate-400 text-lg">
@@ -569,8 +594,8 @@ const ClassesManagement: React.FC = () => {
 
         {/* Create Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowCreateModal(false); resetForm(); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Créer une classe</h2>
                 <button
@@ -629,8 +654,8 @@ const ClassesManagement: React.FC = () => {
 
         {/* Edit Modal */}
         {showEditModal && (
-          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowEditModal(false); resetForm(); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Modifier la classe</h2>
                 <button
@@ -689,8 +714,8 @@ const ClassesManagement: React.FC = () => {
 
         {/* Details Modal */}
         {showDetailsModal && selectedClass && (
-          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowDetailsModal(false); setSelectedClass(null); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white">
                 <div>
                   <h2 className="text-2xl font-bold">{selectedClass.nom_classe}</h2>
@@ -807,8 +832,8 @@ const ClassesManagement: React.FC = () => {
 
         {/* Add Student Modal */}
         {showAddStudentModal && (
-          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => { setShowAddStudentModal(false); setSelectedStudents([]); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Ajouter des élève</h2>
                 <button
@@ -824,7 +849,19 @@ const ClassesManagement: React.FC = () => {
                   Sélectionner les élèves ({selectedStudents.length} sélectionné{selectedStudents.length > 1 ? 's' : ''})
                 </label>
                 <div className="max-h-96 overflow-y-auto border border-slate-300 rounded-lg">
-                  {availableStudents.length === 0 ? (
+                  {loadingStudents ? (
+                    <div className="p-3 space-y-2 animate-pulse">
+                      {[...Array(8)].map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 border-b border-slate-100">
+                          <div className="w-4 h-4 bg-slate-200 rounded" />
+                          <div className="flex-1">
+                            <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
+                            <div className="h-3 bg-slate-200 rounded w-1/4" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : availableStudents.length === 0 ? (
                     <p className="text-slate-400 text-center py-8">Aucun élève disponible</p>
                   ) : (
                     availableStudents.map((student) => (
@@ -871,8 +908,8 @@ const ClassesManagement: React.FC = () => {
 
         {/* Add Enseignement Modal */}
         {showAddEnseignementModal && (
-          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => { setShowAddEnseignementModal(false); resetEnseignementForm(); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Ajouter un enseignement</h2>
                 <button

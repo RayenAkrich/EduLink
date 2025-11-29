@@ -183,7 +183,7 @@ function Header({ setHide, hide, onNavigate }: Props) {
         </button>
 
         <img
-          src="src/assets/ChatGPT Image 23 nov. 2025, 14_44_13.png"
+          src="src/assets/Logo.png"
           alt="logo ecole"
           className="w-12 h-12 rounded-md object-cover"
         />

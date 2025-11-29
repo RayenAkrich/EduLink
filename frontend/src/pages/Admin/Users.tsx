@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Users as UsersIcon, Plus, X, Edit2, Trash2, Search } from "lucide-react";
+import toast from "react-hot-toast";
 import * as userService from "../../services/usersService";
 
 interface User {
@@ -12,10 +14,9 @@ interface User {
 const Users: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -41,9 +42,8 @@ const Users: React.FC = () => {
     try {
       const res = await userService.getUsers();
       setUsers(res.data.users);
-      setError(null);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors du chargement");
+      toast.error(err.response?.data?.message || "Erreur lors du chargement");
     } finally {
       setLoading(false);
     }
@@ -55,8 +55,9 @@ const Users: React.FC = () => {
 
   const resetForm = () => {
     setForm({ nom: "", email: "", mot_de_passe: "", role: "parent" });
-    setEditingId(null);
-    setShowForm(false);
+    setEditingUser(null);
+    setShowCreateModal(false);
+    setShowEditModal(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,7 +65,7 @@ const Users: React.FC = () => {
     setLoading(true);
 
     try {
-      if (editingId) {
+      if (editingUser) {
         // Mise à jour
         const updateData = {
           nom: form.nom,
@@ -72,23 +73,22 @@ const Users: React.FC = () => {
           role: form.role,
           ...(form.mot_de_passe && { mot_de_passe: form.mot_de_passe }),
         };
-        await userService.updateUser(editingId, updateData);
-        setSuccess("Utilisateur mis à jour avec succès");
+        await userService.updateUser(editingUser.id_user, updateData);
+        toast.success("Utilisateur mis à jour avec succès");
       } else {
         // Création
         if (!form.mot_de_passe) {
-          setError("Le mot de passe est obligatoire pour créer un utilisateur");
+          toast.error("Le mot de passe est obligatoire pour créer un utilisateur");
           setLoading(false);
           return;
         }
         await userService.createUser(form);
-        setSuccess("Utilisateur créé avec succès");
+        toast.success("Utilisateur créé avec succès");
       }
       resetForm();
       fetchUsers();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Une erreur est survenue");
+      toast.error(err.response?.data?.message || "Une erreur est survenue");
     } finally {
       setLoading(false);
     }
@@ -101,23 +101,21 @@ const Users: React.FC = () => {
       mot_de_passe: "",
       role: user.role,
     });
-    setEditingId(user.id_user);
-    setShowForm(true);
+    setEditingUser(user);
+    setShowEditModal(true);
   };
 
   const handleDelete = async (id: number) => {
     // Vérifier si c'est l'utilisateur actif
     if (currentUser && currentUser.id_user === id) {
-      setError("❌ Vous ne pouvez pas supprimer votre propre compte administrateur");
-      setTimeout(() => setError(null), 4000);
+      toast.error("Vous ne pouvez pas supprimer votre propre compte administrateur");
       return;
     }
 
     // Vérifier si c'est un admin
     const userToDelete = users.find((u) => u.id_user === id);
     if (userToDelete && userToDelete.role === "admin") {
-      setError("❌ Vous ne pouvez pas supprimer un compte administrateur");
-      setTimeout(() => setError(null), 4000);
+      toast.error("Vous ne pouvez pas supprimer un compte administrateur");
       return;
     }
 
@@ -128,11 +126,10 @@ const Users: React.FC = () => {
     setLoading(true);
     try {
       await userService.deleteUser(id);
-      setSuccess("✅ Utilisateur supprimé avec succès");
+      toast.success("Utilisateur supprimé avec succès");
       fetchUsers();
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors de la suppression");
+      toast.error(err.response?.data?.message || "Erreur lors de la suppression");
     } finally {
       setLoading(false);
     }
@@ -166,247 +163,345 @@ const Users: React.FC = () => {
     !isCurrentUser(user.id_user) && !isAdmin(user.role);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">👥 Gestion des utilisateurs</h1>
-      </div>
-
-      {/* Messages */}
-      {error && (
-        <div className="mb-6 bg-red-50 border-l-4 border-red-500 rounded-lg p-4 text-red-700">
-          <p className="font-semibold">Erreur</p>
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-6 bg-green-50 border-l-4 border-green-500 rounded-lg p-4 text-green-700">
-          <p className="font-semibold">Succès</p>
-          <p className="text-sm">{success}</p>
-        </div>
-      )}
-
-      {/* Form Section */}
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {editingId ? "✏️ Modifier l'utilisateur" : "➕ Ajouter un nouvel utilisateur"}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Nom</label>
-                <input
-                  type="text"
-                  placeholder="Nom complet"
-                  value={form.nom}
-                  onChange={(e) => setForm({ ...form, nom: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  placeholder="exemple@email.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  {editingId ? "Mot de passe (laisser vide pour garder l'actuel)" : "Mot de passe"}
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={form.mot_de_passe}
-                  onChange={(e) => setForm({ ...form, mot_de_passe: e.target.value })}
-                  required={!editingId}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Rôle</label>
-                <select
-                  title="Rôle de l'utilisateur"
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="admin">Administrateur</option>
-                  <option value="enseignant">Enseignant</option>
-                  <option value="parent">Parent</option>
-                </select>
-              </div>
+    <div className="p-6 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Gestion des Utilisateurs</h1>
+              <p className="text-slate-600 mt-1">
+                {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? "s" : ""} trouvé{filteredUsers.length > 1 ? "s" : ""}
+              </p>
             </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus size={20} />
+              Créer un utilisateur
+            </button>
+          </div>
 
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 font-semibold"
-              >
-                {loading ? "Traitement..." : editingId ? "Mettre à jour" : "Créer"}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-all font-semibold"
-              >
-                Annuler
-              </button>
+          {/* Search & Filter */}
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher par nom ou email..."
+                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-          </form>
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tous les rôles</option>
+              <option value="admin">Administrateur</option>
+              <option value="enseignant">Enseignant</option>
+              <option value="parent">Parent</option>
+            </select>
+          </div>
         </div>
-      )}
 
-      {/* Action Button */}
-      {!showForm && (
-        <button
-          onClick={() => setShowForm(true)}
-          className="mb-8 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-semibold shadow-lg"
-        >
-          ➕ Ajouter un utilisateur
-        </button>
-      )}
-
-      {/* Search & Filter */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="🔍 Rechercher par nom ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <select
-            title="Filtrer par rôle"
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">Tous les rôles</option>
-            <option value="admin">Administrateur</option>
-            <option value="enseignant">Enseignant</option>
-            <option value="parent">Parent</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="p-8 text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600">Chargement...</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p className="text-lg font-semibold">Aucun utilisateur trouvé</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-100 to-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">ID</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Nom</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Email</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Rôle</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Date création</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Statut</th>
-                  <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user, index) => (
-                  <tr
-                    key={user.id_user}
-                    className={`border-t hover:bg-blue-50 transition ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }`}
-                  >
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-800">
-                      {user.id_user}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-800">{user.nom}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold ${getRoleBadgeColor(
-                          user.role
-                        )}`}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(user.date_creation).toLocaleDateString("fr-FR")}
-                    </td>
-                    <td className="px-6 py-4">
-                      {isCurrentUser(user.id_user) ? (
-                        <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                          🔐 Vous (Actif)
-                        </span>
-                      ) : isAdmin(user.role) ? (
-                        <span className="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-semibold">
-                          🔒 Admin
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-3 justify-center">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-semibold"
-                        >
-                          ✏️ Modifier
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id_user)}
-                          disabled={!canDelete(user) || loading}
-                          title={
-                            isCurrentUser(user.id_user)
-                              ? "Vous ne pouvez pas supprimer votre propre compte"
-                              : isAdmin(user.role)
-                              ? "Impossible de supprimer un compte administrateur"
-                              : "Supprimer cet utilisateur"
-                          }
-                          className={`px-4 py-2 rounded-lg transition text-sm font-semibold ${
-                            canDelete(user)
-                              ? "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
-                              : "bg-gray-300 text-gray-600 cursor-not-allowed opacity-50"
-                          }`}
-                        >
-                          🗑️ Supprimer
-                        </button>
+        {/* Users Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="animate-pulse">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="border-t p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 space-y-3">
+                        <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                        <div className="h-3 bg-slate-200 rounded w-1/3"></div>
                       </div>
-                    </td>
-                  </tr>
+                      <div className="flex gap-2">
+                        <div className="h-8 w-8 bg-slate-200 rounded"></div>
+                        <div className="h-8 w-8 bg-slate-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          )}
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="p-12 text-center">
+                <UsersIcon size={64} className="mx-auto mb-4 text-slate-300" />
+                <p className="text-slate-400 text-lg">Aucun utilisateur trouvé</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Nom</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Email</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Rôle</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold text-slate-700">Date création</th>
+                    <th className="px-6 py-4 text-center text-sm font-bold text-slate-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user) => (
+                    <tr
+                      key={user.id_user}
+                      className="border-t hover:bg-slate-50 transition"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-slate-900">{user.nom}</p>
+                          {isCurrentUser(user.id_user) && (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
+                              Vous
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${getRoleBadgeColor(
+                            user.role
+                          )}`}
+                        >
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {new Date(user.date_creation).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2 justify-center">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="text-blue-600 hover:text-blue-700 p-2 rounded hover:bg-blue-50"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id_user)}
+                            disabled={!canDelete(user) || loading}
+                            title={
+                              isCurrentUser(user.id_user)
+                                ? "Vous ne pouvez pas supprimer votre propre compte"
+                                : isAdmin(user.role)
+                                ? "Impossible de supprimer un compte administrateur"
+                                : "Supprimer cet utilisateur"
+                            }
+                            className={`p-2 rounded transition ${
+                              canDelete(user)
+                                ? "text-red-500 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                                : "text-slate-300 cursor-not-allowed"
+                            }`}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
-        {/* Footer Stats */}
-        <div className="bg-gradient-to-r from-gray-100 to-gray-50 px-6 py-4 border-t">
-          <p className="text-sm text-gray-700 font-semibold">
-            Total: <span className="text-blue-600">{filteredUsers.length}</span> utilisateur(s) | 
-            <span className="text-red-600 ml-2">
-              {filteredUsers.filter((u) => isAdmin(u.role)).length} Admin(s)
-            </span>
-          </p>
-        </div>
+        {/* Create Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowCreateModal(false); resetForm(); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-xl font-bold">Créer un utilisateur</h2>
+                <button
+                  onClick={() => { setShowCreateModal(false); resetForm(); }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Nom complet
+                      </label>
+                      <input
+                        type="text"
+                        value={form.nom}
+                        onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                        placeholder="Ex: Jean Dupont"
+                        required
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="exemple@email.com"
+                        required
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Mot de passe
+                      </label>
+                      <input
+                        type="password"
+                        value={form.mot_de_passe}
+                        onChange={(e) => setForm({ ...form, mot_de_passe: e.target.value })}
+                        placeholder="••••••••"
+                        required
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Rôle
+                      </label>
+                      <select
+                        value={form.role}
+                        onChange={(e) => setForm({ ...form, role: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="parent">Parent</option>
+                        <option value="enseignant">Enseignant</option>
+                        <option value="admin">Administrateur</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowCreateModal(false); resetForm(); }}
+                    className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Création..." : "Créer"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {showEditModal && editingUser && (
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowEditModal(false); resetForm(); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h2 className="text-xl font-bold">Modifier l'utilisateur</h2>
+                <button
+                  onClick={() => { setShowEditModal(false); resetForm(); }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Nom complet
+                      </label>
+                      <input
+                        type="text"
+                        value={form.nom}
+                        onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                        placeholder="Ex: Jean Dupont"
+                        required
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="exemple@email.com"
+                        required
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Mot de passe (laisser vide pour ne pas changer)
+                      </label>
+                      <input
+                        type="password"
+                        value={form.mot_de_passe}
+                        onChange={(e) => setForm({ ...form, mot_de_passe: e.target.value })}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Rôle
+                      </label>
+                      <select
+                        value={form.role}
+                        onChange={(e) => setForm({ ...form, role: e.target.value })}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="parent">Parent</option>
+                        <option value="enseignant">Enseignant</option>
+                        <option value="admin">Administrateur</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setShowEditModal(false); resetForm(); }}
+                    className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Mise à jour..." : "Mettre à jour"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default Users;
+};export default Users;

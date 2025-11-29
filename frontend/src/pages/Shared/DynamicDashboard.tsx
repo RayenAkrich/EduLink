@@ -3,6 +3,7 @@ import DashboardParent from "../Parent/DashboardParent";
 import DashboardTeacher from "../Teacher/DashboardTeacher";
 import type { User } from "./types/User";
 import { useUser } from "./userContext";
+import DashboardAdmin from "../Admin/DashbordAdmin";
 
 export default function DynamicDashboard() {
   const { user } = useUser();
@@ -18,7 +19,7 @@ export default function DynamicDashboard() {
 
   switch (user.role) {
     case "admin":
-      return <DashboardTeacher />;
+      return <DashboardAdmin />;
 
     case "parent":
       return <DashboardParent />;

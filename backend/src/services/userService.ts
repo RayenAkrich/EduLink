@@ -1,14 +1,9 @@
 import prisma from "./prismaClient";
 import jwt from "jsonwebtoken";
-
-// Pour le hachage, on peut utiliser crypto natif ou bcrypt
-// Ici on utilise crypto natif pour éviter dépendances supplémentaires
 import crypto from "crypto";
 
 export class UserService {
-  /**
-   * Hache un mot de passe avec un salt
-   */
+
   private static hashPassword(password: string): string {
     const salt = crypto.randomBytes(16).toString("hex");
     const hash = crypto
@@ -17,9 +12,7 @@ export class UserService {
     return `${salt}:${hash}`;
   }
 
-  /**
-   * Vérifie un mot de passe contre un hash
-   */
+
   private static verifyPassword(password: string, storedHash: string): boolean {
     const [salt, hash] = storedHash.split(":");
     const computedHash = crypto
@@ -28,9 +21,6 @@ export class UserService {
     return computedHash === hash;
   }
 
-  /**
-   * Génère un JWT token
-   */
   private static generateToken(userId: number, email: string, role: string): string {
     const secret = process.env.JWT_SECRET || "your-secret-key-change-in-prod";
     const token = jwt.sign(
@@ -41,9 +31,7 @@ export class UserService {
     return token;
   }
 
-  /**
-   * Authentifie un utilisateur avec email + password
-   */
+ 
   static async login(email: string, password: string) {
     try {
       const user = await prisma.user.findUnique({
@@ -78,9 +66,7 @@ export class UserService {
     }
   }
 
-  /**
-   * Crée un nouvel utilisateur (admin only)
-   */
+
   static async createUser(nom: string, email: string, password: string, role: string) {
     try {
       const existingUser = await prisma.user.findUnique({
@@ -89,6 +75,10 @@ export class UserService {
 
       if (existingUser) {
         throw new Error("Cet email existe déjà");
+      }
+
+      if (!nom || !email || !password || !role) {
+        throw new Error("Tous les champs sont obligatoires");
       }
 
       const hashedPassword = this.hashPassword(password);
@@ -108,6 +98,7 @@ export class UserService {
         nom: newUser.nom,
         email: newUser.email,
         role: newUser.role,
+        date_creation: newUser.date_creation,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur lors de la création";
@@ -118,9 +109,28 @@ export class UserService {
     }
   }
 
-  /**
-   * Récupère un utilisateur par ID
-   */
+ 
+  static async getAllUsers() {
+    try {
+      const users = await prisma.user.findMany({
+        select: {
+          id_user: true,
+          nom: true,
+          email: true,
+          role: true,
+          date_creation: true,
+        },
+        orderBy: { date_creation: "desc" },
+      });
+
+      return { success: true, users };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur";
+      return { success: false, message: errorMessage };
+    }
+  }
+
+
   static async getUserById(userId: number) {
     try {
       const user = await prisma.user.findUnique({
@@ -141,6 +151,78 @@ export class UserService {
       return { success: true, user };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erreur";
+      return { success: false, message: errorMessage };
+    }
+  }
+
+  static async updateUser(userId: number, data: { nom?: string; email?: string; role?: string; mot_de_passe?: string }) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id_user: userId },
+      });
+
+      if (!user) {
+        throw new Error("Utilisateur non trouvé");
+      }
+
+      if (data.email && data.email !== user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: data.email },
+        });
+        if (existingUser) {
+          throw new Error("Cet email existe déjà");
+        }
+      }
+
+      const updateData: any = {};
+      if (data.nom) updateData.nom = data.nom;
+      if (data.email) updateData.email = data.email;
+      if (data.role) updateData.role = data.role;
+      if (data.mot_de_passe) updateData.mot_de_passe = this.hashPassword(data.mot_de_passe);
+
+      const updatedUser = await prisma.user.update({
+        where: { id_user: userId },
+        data: updateData,
+        select: {
+          id_user: true,
+          nom: true,
+          email: true,
+          role: true,
+          date_creation: true,
+        },
+      });
+
+      return {
+        success: true,
+        message: "Utilisateur mis à jour",
+        user: updatedUser,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la mise à jour";
+      return { success: false, message: errorMessage };
+    }
+  }
+
+  static async deleteUser(userId: number) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id_user: userId },
+      });
+
+      if (!user) {
+        throw new Error("Utilisateur non trouvé");
+      }
+
+      await prisma.user.delete({
+        where: { id_user: userId },
+      });
+
+      return {
+        success: true,
+        message: "Utilisateur supprimé avec succès",
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la suppression";
       return { success: false, message: errorMessage };
     }
   }

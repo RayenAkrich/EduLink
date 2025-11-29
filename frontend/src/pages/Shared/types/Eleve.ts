@@ -4,4 +4,9 @@ export interface Eleve {
   date_naissance: string;
   email?: string;
   id_parent: number;
+  classe?: string | null;
+  annee_scolaire?: string | null;
+  moyenne?: string | null;
+  totalNotes?: number;
+  totalAbsences?: number;
 }

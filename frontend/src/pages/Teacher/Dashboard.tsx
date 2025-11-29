@@ -14,7 +14,6 @@ interface Stats {
 export default function Dashboard({ setDash }: Props) {
     const { user } = useUser();
     const [stats, setStats] = useState<Stats>({ totalClasses: 0, totalStudents: 0, totalSubjects: 0 });
-    const [activeTab, setActiveTab] = useState<'about' | 'password'>('about');
 
     useEffect(() => {
         // Charger les statistiques de l'enseignant
@@ -72,7 +71,7 @@ export default function Dashboard({ setDash }: Props) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
+        <div className="min-h-screen  bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
             {/* En-tête avec profil */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
                 <div className="bg-gray-50 h-32"></div>
@@ -163,46 +162,19 @@ export default function Dashboard({ setDash }: Props) {
                 </div>
             </div>
 
-            {/* Onglets */}
+            {/* Informations personnelles */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                <div className="border-b border-gray-200">
-                    <div className="flex">
-                        <button
-                            onClick={() => setActiveTab('about')}
-                            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                                activeTab === 'about'
-                                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                            }`}
-                        >
-                            <div className="flex items-center justify-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                Informations personnelles
-                            </div>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('password')}
-                            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                                activeTab === 'password'
-                                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                            }`}
-                        >
-                            <div className="flex items-center justify-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                Sécurité
-                            </div>
-                        </button>
+                <div className="border-b border-gray-200 px-6 py-4">
+                    <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <h2 className="text-lg font-semibold text-gray-800">Informations personnelles</h2>
                     </div>
                 </div>
 
                 <div className="p-8">
-                    {activeTab === 'about' ? (
-                        <div className="space-y-6">
+                    <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-gray-500">Nom complet</label>
@@ -247,49 +219,8 @@ export default function Dashboard({ setDash }: Props) {
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-                                <div className="flex">
-                                    <svg className="w-5 h-5 text-yellow-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                    <div>
-                                        <h3 className="text-sm font-medium text-yellow-800">Sécurité du compte</h3>
-                                        <p className="text-sm text-yellow-700 mt-1">
-                                            Pour modifier votre mot de passe, contactez l'administrateur système.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-gray-800">Conseils de sécurité</h3>
-                                <ul className="space-y-3">
-                                    <li className="flex items-start gap-3">
-                                        <svg className="w-5 h-5 text-green-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        <span className="text-gray-600">Utilisez un mot de passe fort avec au moins 8 caractères</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <svg className="w-5 h-5 text-green-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        <span className="text-gray-600">Ne partagez jamais votre mot de passe avec d'autres personnes</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <svg className="w-5 h-5 text-green-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                        <span className="text-gray-600">Déconnectez-vous toujours après utilisation sur un ordinateur partagé</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    )}
+                    </div>
                 </div>
-            </div>
         </div>
     );
 }

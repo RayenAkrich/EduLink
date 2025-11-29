@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
   }
 
   return (
-    <div className="h-screen w-60 bg-slate-900 text-white shadow-lg p-4 flex flex-col gap-3">
+    <div className="w-60 bg-slate-800 text-white shadow-lg p-4 flex flex-col gap-3">
       <h2 className="text-xl font-bold mb-4">Espace {role}</h2>
 
       {tabs.map((tab) => (
@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
           key={tab.id}
           onClick={() => {setDash(String(tab.id).toLowerCase())}}
           className={`flex items-center cursor-pointer gap-2 p-2 rounded-xl transition-all
-            ${String(dash ?? "").toLowerCase() === tab.id ? "bg-slate-700" : "hover:bg-slate-800"}`}
+            ${String(dash ?? "").toLowerCase() === tab.id ? "bg-slate-600" : "hover:bg-slate-600"}`}
         >
           {tab.icon}
           <span>{tab.label}</span>

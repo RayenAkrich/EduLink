@@ -33,7 +33,7 @@ export default function Notes({ selectedChild }: Props) {
       setLoading(true);
       setError(null);
       try {
-        const url = `${base}/notes/child/${selectedChild.id_eleve}`;
+        const url = `${base}/api/notes/child/${selectedChild.id_eleve}`;
         console.log("Fetching notes from:", url);
         const res = await fetch(url, { signal });
         if (!res.ok) throw new Error(`fetch failed: ${res.status}`);

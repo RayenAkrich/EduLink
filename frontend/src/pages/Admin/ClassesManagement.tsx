@@ -67,6 +67,14 @@ interface Coefficient {
   coefficient: number;
 }
 
+interface ScheduleInfo {
+  exists: boolean;
+  data: {
+    filename: string;
+    extension: string;
+  } | null;
+}
+
 const ClassesManagement: React.FC = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +88,8 @@ const ClassesManagement: React.FC = () => {
   const [loadingStudents, setLoadingStudents] = useState<boolean>(false);
   const [availableTeachers, setAvailableTeachers] = useState<Teacher[]>([]);
   const [availableCoefficients, setAvailableCoefficients] = useState<Coefficient[]>([]);
+  const [scheduleInfo, setScheduleInfo] = useState<ScheduleInfo | null>(null);
+  const [uploadingSchedule, setUploadingSchedule] = useState(false);
   
   // Form state
   const [nomClasse, setNomClasse] = useState("");
@@ -125,11 +135,105 @@ const ClassesManagement: React.FC = () => {
       const data = await response.json();
       if (data.success) {
         setSelectedClass(data.data);
+        await checkSchedule(classId);
         setShowDetailsModal(true);
       }
     } catch (error) {
       console.error("Error fetching class details:", error);
       toast.error("Erreur lors du chargement des détails");
+    }
+  };
+
+  const checkSchedule = async (classId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5000/api/classes/${classId}/schedule/check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setScheduleInfo(data);
+      }
+    } catch (error) {
+      console.error("Error checking schedule:", error);
+    }
+  };
+
+  const uploadSchedule = async (classId: number, file: File) => {
+    try {
+      setUploadingSchedule(true);
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("schedule", file);
+
+      const response = await fetch(`http://localhost:5000/api/classes/${classId}/schedule/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        await checkSchedule(classId);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error("Error uploading schedule:", error);
+      toast.error("Erreur lors de l'upload de l'emploi");
+    } finally {
+      setUploadingSchedule(false);
+    }
+  };
+
+  const downloadSchedule = async (classId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5000/api/classes/${classId}/schedule/download`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = scheduleInfo?.data?.filename || `Emploi-${classId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success("Emploi téléchargé avec succès");
+      } else {
+        toast.error("Erreur lors du téléchargement");
+      }
+    } catch (error) {
+      console.error("Error downloading schedule:", error);
+      toast.error("Erreur lors du téléchargement de l'emploi");
+    }
+  };
+
+  const deleteSchedule = async (classId: number) => {
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet emploi ?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5000/api/classes/${classId}/schedule`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message);
+        await checkSchedule(classId);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting schedule:", error);
+      toast.error("Erreur lors de la suppression de l'emploi");
     }
   };
 
@@ -730,6 +834,69 @@ const ClassesManagement: React.FC = () => {
               </div>
 
               <div className="p-6">
+                {/* Schedule Section */}
+                <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-blue-800">
+                      <BookOpen size={20} />
+                      Emploi du temps
+                    </h3>
+                  </div>
+
+                  {scheduleInfo?.exists ? (
+                    <div className="flex gap-3 items-center justify-center">
+                      <button
+                        onClick={() => downloadSchedule(selectedClass.id_classe)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                      >
+                        <BookOpen size={18} />
+                        Télécharger l'emploi
+                      </button>
+                      <label className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer">
+                        <Edit2 size={18} />
+                        {uploadingSchedule ? "Uploading..." : "Changer l'emploi"}
+                        <input
+                          type="file"
+                          accept=".pdf,.xlsx,.csv,.png,.jpg,.jpeg"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadSchedule(selectedClass.id_classe, file);
+                          }}
+                          className="hidden"
+                          disabled={uploadingSchedule}
+                        />
+                      </label>
+                      <button
+                        onClick={() => deleteSchedule(selectedClass.id_classe)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 size={18} />
+                        Supprimer
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <label className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer inline-flex mx-auto">
+                        <Plus size={18} />
+                        {uploadingSchedule ? "Uploading..." : "Ajouter un emploi"}
+                        <input
+                          type="file"
+                          accept=".pdf,.xlsx,.csv,.png,.jpg,.jpeg"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadSchedule(selectedClass.id_classe, file);
+                          }}
+                          className="hidden"
+                          disabled={uploadingSchedule}
+                        />
+                      </label>
+                      <p className="text-sm text-slate-600 mt-2">
+                        Formats acceptés: PDF, Excel (xlsx/csv), Images (png/jpg)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Students Section */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-4">

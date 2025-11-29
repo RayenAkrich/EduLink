@@ -1,9 +1,55 @@
 import { Router, Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { authMiddleware } from "../middleware/authMiddleware";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = Router();
 const prisma = new PrismaClient();
+
+// Helper function to sanitize filename
+const sanitizeFilename = (name: string): string => {
+  return name.replace(/[^a-zA-Z0-9À-ÿ\-_]/g, '_');
+};
+
+// Helper function to generate schedule filename pattern
+const getSchedulePattern = (nomClasse: string, anneeScolaire: string): string => {
+  const sanitizedName = sanitizeFilename(nomClasse);
+  const sanitizedYear = sanitizeFilename(anneeScolaire);
+  return `Emploi-${sanitizedName}-${sanitizedYear}`;
+};
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), "..", "storage");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Filename will be set after fetching class details
+    cb(null, file.originalname);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /pdf|xlsx|csv|png|jpg|jpeg/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error("Seuls les fichiers PDF, Excel (xlsx/csv) et images (png/jpg) sont autorisés"));
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+});
 
 // Get all classes
 router.get("/", authMiddleware, async (req: Request, res: Response) => {
@@ -530,6 +576,199 @@ router.get("/coefficients/list", authMiddleware, async (req: Request, res: Respo
     res.json({ success: true, data: coefficients });
   } catch (error) {
     console.error("Error fetching coefficients:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// Check if schedule exists for a class
+router.get("/:id/schedule/check", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const classId = req.params.id;
+    
+    // Get class details
+    const classe = await prisma.classe.findUnique({
+      where: { id_classe: parseInt(classId) }
+    });
+    
+    if (!classe) {
+      return res.status(404).json({ success: false, message: "Classe non trouvée" });
+    }
+    
+    const storageDir = path.join(process.cwd(), "..", "storage");
+    const filePattern = getSchedulePattern(classe.nom_classe, classe.annee_scolaire);
+    const possibleExtensions = ['.pdf', '.xlsx', '.csv', '.png', '.jpg', '.jpeg'];
+    let scheduleFile = null;
+    
+    for (const ext of possibleExtensions) {
+      const filePath = path.join(storageDir, `${filePattern}${ext}`);
+      if (fs.existsSync(filePath)) {
+        scheduleFile = {
+          filename: `${filePattern}${ext}`,
+          extension: ext.substring(1)
+        };
+        break;
+      }
+    }
+    
+    res.json({ success: true, exists: !!scheduleFile, data: scheduleFile });
+  } catch (error) {
+    console.error("Error checking schedule:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// Upload schedule for a class
+router.post("/:id/schedule/upload", authMiddleware, upload.single('schedule'), async (req: Request, res: Response) => {
+  try {
+    const userRole = req.user!.role;
+    
+    if (userRole !== "admin" && userRole !== "enseignant") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Seuls les admins et enseignants peuvent uploader un emploi" 
+      });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Aucun fichier fourni" 
+      });
+    }
+    
+    const classId = req.params.id;
+    
+    // Get class details
+    const classe = await prisma.classe.findUnique({
+      where: { id_classe: parseInt(classId) }
+    });
+    
+    if (!classe) {
+      return res.status(404).json({ success: false, message: "Classe non trouvée" });
+    }
+    
+    const storageDir = path.join(process.cwd(), "..", "storage");
+    const filePattern = getSchedulePattern(classe.nom_classe, classe.annee_scolaire);
+    const ext = path.extname(req.file.originalname);
+    const newFilename = `${filePattern}${ext}`;
+    const newFilePath = path.join(storageDir, newFilename);
+    
+    // Delete old schedule files with different extensions
+    const possibleExtensions = ['.pdf', '.xlsx', '.csv', '.png', '.jpg', '.jpeg'];
+    for (const oldExt of possibleExtensions) {
+      const oldFilePath = path.join(storageDir, `${filePattern}${oldExt}`);
+      if (fs.existsSync(oldFilePath)) {
+        fs.unlinkSync(oldFilePath);
+      }
+    }
+    
+    // Rename uploaded file to proper name
+    fs.renameSync(req.file.path, newFilePath);
+    
+    res.json({ 
+      success: true, 
+      message: "Emploi du temps uploadé avec succès",
+      data: {
+        filename: newFilename,
+        extension: ext.substring(1)
+      }
+    });
+  } catch (error) {
+    console.error("Error uploading schedule:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// Download schedule for a class
+router.get("/:id/schedule/download", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const classId = req.params.id;
+    
+    // Get class details
+    const classe = await prisma.classe.findUnique({
+      where: { id_classe: parseInt(classId) }
+    });
+    
+    if (!classe) {
+      return res.status(404).json({ success: false, message: "Classe non trouvée" });
+    }
+    
+    const storageDir = path.join(process.cwd(), "..", "storage");
+    const filePattern = getSchedulePattern(classe.nom_classe, classe.annee_scolaire);
+    const possibleExtensions = ['.pdf', '.xlsx', '.csv', '.png', '.jpg', '.jpeg'];
+    
+    let scheduleFile = null;
+    for (const ext of possibleExtensions) {
+      const filePath = path.join(storageDir, `${filePattern}${ext}`);
+      if (fs.existsSync(filePath)) {
+        scheduleFile = filePath;
+        break;
+      }
+    }
+    
+    if (!scheduleFile) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Aucun emploi du temps trouvé pour cette classe" 
+      });
+    }
+    
+    res.download(scheduleFile);
+  } catch (error) {
+    console.error("Error downloading schedule:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// Delete schedule for a class
+router.delete("/:id/schedule", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userRole = req.user!.role;
+    
+    if (userRole !== "admin") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Seuls les admins peuvent supprimer un emploi" 
+      });
+    }
+    
+    const classId = req.params.id;
+    
+    // Get class details
+    const classe = await prisma.classe.findUnique({
+      where: { id_classe: parseInt(classId) }
+    });
+    
+    if (!classe) {
+      return res.status(404).json({ success: false, message: "Classe non trouvée" });
+    }
+    
+    const storageDir = path.join(process.cwd(), "..", "storage");
+    const filePattern = getSchedulePattern(classe.nom_classe, classe.annee_scolaire);
+    const possibleExtensions = ['.pdf', '.xlsx', '.csv', '.png', '.jpg', '.jpeg'];
+    
+    let deleted = false;
+    for (const ext of possibleExtensions) {
+      const filePath = path.join(storageDir, `${filePattern}${ext}`);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        deleted = true;
+      }
+    }
+    
+    if (!deleted) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Aucun emploi du temps trouvé" 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: "Emploi du temps supprimé avec succès"
+    });
+  } catch (error) {
+    console.error("Error deleting schedule:", error);
     res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 });

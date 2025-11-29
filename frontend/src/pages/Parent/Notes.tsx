@@ -14,6 +14,7 @@ type Note = {
   coefficientMatiere: number;
   date: string;
   score: number;
+  trimestre: number;
   nomclass: string;
 };
 
@@ -22,6 +23,7 @@ export default function Notes({ selectedChild }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
+  const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1);
   const [viewMode, setViewMode] = useState<"none" | "bulletin" | string>("none"); // "none", "bulletin", ou nom de matière
 
   useEffect(() => {
@@ -35,10 +37,13 @@ export default function Notes({ selectedChild }: Props) {
       try {
         const url = `${base}/api/notes/child/${selectedChild.id_eleve}`;
         console.log("Fetching notes from:", url);
+        console.log("Selected trimestre:", selectedTrimestre);
         const res = await fetch(url, { signal });
         if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
         const data = await res.json();
         console.log("Notes received:", data);
+        console.log("Notes count:", data.length);
+        console.log("Filtering by trimestre:", selectedTrimestre);
         setNotes(data);
         setError(null);
       } catch (e: any) {
@@ -55,7 +60,7 @@ export default function Notes({ selectedChild }: Props) {
     return () => {
       controller.abort();
     };
-  }, [selectedChild, reload]);
+  }, [selectedChild, reload, selectedTrimestre]);
 
   // Calculer la moyenne par matière
   const calculateSubjectAverage = (oral: number | null, controle: number | null, synthese: number | null) => {
@@ -72,7 +77,16 @@ export default function Notes({ selectedChild }: Props) {
   };
 
   const average = useMemo(() => {
+    console.log("🔢 Calcul moyenne - Notes totales:", notes?.length);
+    console.log("🔢 Trimestre sélectionné:", selectedTrimestre);
+    
     if (!notes || notes.length === 0) return null;
+    
+    // Filtrer les notes du trimestre sélectionné
+    const notesDuTrimestre = notes.filter(n => n.trimestre === selectedTrimestre);
+    console.log("🔢 Notes du trimestre:", notesDuTrimestre.length);
+    
+    if (notesDuTrimestre.length === 0) return null;
     
     // Grouper par matière pour calculer chaque moyenne de matière
     const bySubject = new Map<string, { 
@@ -82,7 +96,7 @@ export default function Notes({ selectedChild }: Props) {
       coefMatiere: number 
     }>();
     
-    for (const n of notes) {
+    for (const n of notesDuTrimestre) {
       if (!bySubject.has(n.subject)) {
         bySubject.set(n.subject, { 
           oral: null, 
@@ -118,11 +132,18 @@ export default function Notes({ selectedChild }: Props) {
 
     if (totalCoef === 0) return null;
     return +(totalWeighted / totalCoef).toFixed(2);
-  }, [notes]);
+  }, [notes, selectedTrimestre]);
 
   // Grouper les notes par matière
   const groupedNotes = useMemo(() => {
+    console.log("📚 Groupement - Notes totales:", notes?.length);
+    console.log("📚 Trimestre sélectionné:", selectedTrimestre);
+    
     if (!notes || notes.length === 0) return [];
+
+    // Filtrer par trimestre
+    const notesDuTrimestre = notes.filter(n => n.trimestre === selectedTrimestre);
+    console.log("📚 Notes du trimestre:", notesDuTrimestre.length);
 
     const grouped = new Map<string, {
       subject: string;
@@ -133,7 +154,7 @@ export default function Notes({ selectedChild }: Props) {
       synthese: number | null;
     }>();
 
-    for (const n of notes) {
+    for (const n of notesDuTrimestre) {
       if (!grouped.has(n.subject)) {
         grouped.set(n.subject, {
           subject: n.subject,
@@ -158,23 +179,25 @@ export default function Notes({ selectedChild }: Props) {
     }
 
     return Array.from(grouped.values());
-  }, [notes]);
+  }, [notes, selectedTrimestre]);
 
   // Liste des matières disponibles
   const availableSubjects = useMemo(() => {
     if (!notes || notes.length === 0) return [];
+    const notesDuTrimestre = notes.filter(n => n.trimestre === selectedTrimestre);
     const subjects = new Set<string>();
-    notes.forEach(n => subjects.add(n.subject));
+    notesDuTrimestre.forEach(n => subjects.add(n.subject));
     return Array.from(subjects).sort();
-  }, [notes]);
+  }, [notes, selectedTrimestre]);
 
   // Filtrer les notes selon le mode de vue
   const filteredNotes = useMemo(() => {
     if (!notes || viewMode === "none") return [];
-    if (viewMode === "bulletin") return notes;
+    const notesDuTrimestre = notes.filter(n => n.trimestre === selectedTrimestre);
+    if (viewMode === "bulletin") return notesDuTrimestre;
     // Afficher seulement les notes de la matière sélectionnée
-    return notes.filter(n => n.subject === viewMode);
-  }, [notes, viewMode]);
+    return notesDuTrimestre.filter(n => n.subject === viewMode);
+  }, [notes, viewMode, selectedTrimestre]);
 
   if (loading) {
     return (
@@ -203,20 +226,22 @@ export default function Notes({ selectedChild }: Props) {
     return <div className="p-6 text-red-600">{error}</div>;
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  };
+
   return (
     <div className="p-6">
-      <header className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Notes de {selectedChild.nom}</h1>
-          <p className="text-sm text-gray-500">
-            Né(e) le: <span className="font-medium text-gray-700">{selectedChild.date_naissance ?? "—"}</span>
-          </p>
-        </div>
-
-        <div className="text-right">
-          <div className="text-sm text-gray-500">Moyenne générale</div>
-          <div className="mt-1 text-2xl font-bold">{average !== null ? `${average} / 20` : "—"}</div>
-        </div>
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold">Notes de {selectedChild.nom}</h1>
+        <p className="text-sm text-gray-500">
+          Né(e) le: <span className="font-medium text-gray-700">{formatDate(selectedChild.date_naissance)}</span>
+        </p>
       </header>
 
       <section className="bg-white shadow rounded-lg overflow-hidden">
@@ -227,6 +252,15 @@ export default function Notes({ selectedChild }: Props) {
                viewMode !== "none" ? `Notes de ${viewMode}` : "Sélectionner une vue"}
             </h2>
             <div className="flex gap-2">
+              <select 
+                value={selectedTrimestre}
+                onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+              >
+                <option value={1}>1er Trimestre</option>
+                <option value={2}>2ème Trimestre</option>
+                <option value={3}>3ème Trimestre</option>
+              </select>
               <select 
                 value={viewMode} 
                 onChange={(e) => setViewMode(e.target.value)}

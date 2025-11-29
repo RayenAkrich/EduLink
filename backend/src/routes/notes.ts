@@ -53,6 +53,7 @@ notesRoutes.get('/child/:id',async(req,res,next)=>{
             coefficientMatiere:noteMATtyp.enseignement.coefficient_matiere?.coefficient || 1,
             date:noteMATtyp.date_attribution,
             score:noteMATtyp.valeur,
+            trimestre:noteMATtyp.trimestre,
             nomclass:noteMATtyp.eleve.eleves_classes[0]?.classe.nom_classe || "Classe inconnue",
         }))
         res.status(200).json(formatted);
@@ -106,13 +107,12 @@ notesRoutes.get('/ClassMatiere/:id',async(req,res,next)=>{
     }
 })
 
-// Route pour récupérer les notes existantes pour une classe/matière (date ignorée - on prend toutes les notes)
-notesRoutes.get('/existing/:classeId/:matiere/:date', async (req, res, next) => {
+// Route pour récupérer les notes existantes pour une classe/matière/trimestre
+notesRoutes.get('/existing/:classeId/:matiere/:trimestre', async (req, res, next) => {
     try {
-        const { classeId, matiere } = req.params;
-        // La date est ignorée - on retourne TOUTES les notes de la matière
+        const { classeId, matiere, trimestre } = req.params;
         
-        console.log(`Récupération notes pour classe ${classeId}, matière ${matiere} (toutes dates)`);
+        console.log(`Récupération notes pour classe ${classeId}, matière ${matiere}, trimestre ${trimestre}`);
         
         // Trouver l'enseignement
         const enseignement = await prisma.enseignement.findFirst({
@@ -126,10 +126,11 @@ notesRoutes.get('/existing/:classeId/:matiere/:date', async (req, res, next) => 
             return res.json([]); // Retourner tableau vide si pas d'enseignement
         }
 
-        // Récupérer TOUTES les notes pour cette classe/matière (SANS filtre de date)
+        // Récupérer les notes pour ce trimestre spécifique
         const notes = await prisma.note.findMany({
             where: {
-                id_enseignement: enseignement.id_enseignement
+                id_enseignement: enseignement.id_enseignement,
+                trimestre: parseInt(trimestre)
             },
             include: {
                 type_note: {
@@ -175,13 +176,13 @@ notesRoutes.get('/existing/:classeId/:matiere/:date', async (req, res, next) => 
 // ...existing code...
 notesRoutes.post('/save', async (req, res, next) => {
     try {
-        const { classe, matiere, date, assessmentType, notes } = req.body;
+        const { classe, matiere, date, assessmentType, notes, trimestre } = req.body;
         
         // Validation des données reçues
-        if (!classe || !matiere || !date || !assessmentType || !Array.isArray(notes)) {
+        if (!classe || !matiere || !date || !assessmentType || !Array.isArray(notes) || !trimestre) {
             return res.status(400).json({
                 success: false,
-                message: "Données manquantes ou invalides"
+                message: "Données manquantes ou invalides (trimestre requis)"
             });
         }
 
@@ -271,13 +272,13 @@ notesRoutes.post('/save', async (req, res, next) => {
                 });
             }
             
-            // 3. Vérifier si une note existe déjà pour cet élève, cette matière et ce type (SANS date)
-            // Un élève ne peut avoir qu'UNE SEULE note de chaque type par matière
+            // 3. Vérifier si une note existe déjà pour cet élève, cette matière, ce type ET ce trimestre
             const existingNote = await prisma.note.findFirst({
                 where: {
                     id_eleve: parseInt(studentId),
                     id_enseignement: enseignement.id_enseignement,
-                    id_type_note: typeNote.id_type_note
+                    id_type_note: typeNote.id_type_note,
+                    trimestre: parseInt(trimestre)
                 }
             });
             
@@ -293,7 +294,8 @@ notesRoutes.post('/save', async (req, res, next) => {
                     },
                     data: {
                         valeur: noteValue,
-                        date_attribution: new Date(date)
+                        date_attribution: new Date(date),
+                        trimestre: parseInt(trimestre)
                     }
                 });
                 console.log('Note mise à jour:', updatedNote);
@@ -304,7 +306,8 @@ notesRoutes.post('/save', async (req, res, next) => {
                     date_attribution: new Date(date),
                     id_eleve: parseInt(studentId),
                     id_enseignement: enseignement.id_enseignement,
-                    id_type_note: typeNote.id_type_note
+                    id_type_note: typeNote.id_type_note,
+                    trimestre: parseInt(trimestre)
                 });
                 // Créer une nouvelle note
                 const newNote = await prisma.note.create({
@@ -313,7 +316,8 @@ notesRoutes.post('/save', async (req, res, next) => {
                         date_attribution: new Date(date),
                         id_eleve: parseInt(studentId),
                         id_enseignement: enseignement.id_enseignement,
-                        id_type_note: typeNote.id_type_note
+                        id_type_note: typeNote.id_type_note,
+                        trimestre: parseInt(trimestre)
                     }
                 });
                 console.log('Nouvelle note créée:', newNote);

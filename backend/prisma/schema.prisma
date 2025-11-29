@@ -141,10 +141,13 @@ model Note {
   id_type_note    Int
   valeur          Float
   date_attribution DateTime @default(now())
+  trimestre       Int      // 1, 2 ou 3
 
   eleve         Eleve        @relation(fields: [id_eleve], references: [id_eleve])
   enseignement  Enseignement @relation(fields: [id_enseignement], references: [id_enseignement])
   type_note     TypeNote     @relation(fields: [id_type_note], references: [id_type_note])
+
+  @@unique([id_eleve, id_enseignement, id_type_note, trimestre])
 }
 
 // ===================== MESSAGES =====================

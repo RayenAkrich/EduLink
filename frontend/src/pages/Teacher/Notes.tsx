@@ -22,7 +22,7 @@ export default function Notes() {
   
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1);
 
   const [students, setStudents] = useState<Student[]>([]);
   const [rows, setRows] = useState<Record<string, NoteRow>>({});
@@ -131,12 +131,12 @@ export default function Notes() {
     }
   }, [selectedClass, allData]);
 
-  // 3. Charger toutes les notes une seule fois quand classe change (PAS la date !)
+  // 3. Charger toutes les notes une seule fois quand classe ou trimestre change
   useEffect(() => {
     if (selectedClass && students.length > 0 && subjects.length > 0) {
       loadAllNotes();
     }
-  }, [selectedClass, students.length, subjects.length]);
+  }, [selectedClass, selectedTrimestre, students.length, subjects.length]);
 
   // 4. Mettre à jour les lignes affichées quand la matière change (filtrage local)
   useEffect(() => {
@@ -180,17 +180,17 @@ export default function Notes() {
 
   // Fonction pour charger toutes les notes de toutes les matières en une seule fois (optimisé)
   const loadAllNotes = async () => {
-    if (!selectedClass || !date || subjects.length === 0) {
+    if (!selectedClass || !selectedTrimestre || subjects.length === 0) {
       console.log('Pas assez de paramètres pour charger les notes');
       return;
     }
 
     try {
-      console.log(`⚡ Chargement optimisé de TOUTES les notes pour classe ${selectedClass}, date ${date}`);
+      console.log(`⚡ Chargement optimisé de TOUTES les notes pour classe ${selectedClass}, trimestre ${selectedTrimestre}`);
       
       // Charger les notes pour toutes les matières disponibles EN PARALLÈLE
       const notesPromises = subjects.map(async (subject) => {
-        const res = await fetch(`http://localhost:5000/api/notes/existing/${selectedClass}/${encodeURIComponent(subject.id)}/${date}`);
+        const res = await fetch(`http://localhost:5000/api/notes/existing/${selectedClass}/${encodeURIComponent(subject.id)}/${selectedTrimestre}`);
         if (res.ok) {
           const notes: NoteRow[] = await res.json();
           return { matiere: subject.id, notes };
@@ -228,15 +228,15 @@ export default function Notes() {
 
   // Fonction pour charger les notes existantes
   const loadExistingNotes = async () => {
-    if (!selectedClass || !selectedSubject || !date) {
-      console.log('Pas assez de param\u00e8tres pour charger les notes existantes');
+    if (!selectedClass || !selectedSubject || !selectedTrimestre) {
+      console.log('Pas assez de paramètres pour charger les notes existantes');
       return;
     }
 
     try {
-      console.log(`Chargement des notes existantes pour classe ${selectedClass}, mati\u00e8re ${selectedSubject}, date ${date}`);
+      console.log(`Chargement des notes existantes pour classe ${selectedClass}, matière ${selectedSubject}, trimestre ${selectedTrimestre}`);
       
-      const res = await fetch(`http://localhost:5000/api/notes/existing/${selectedClass}/${encodeURIComponent(selectedSubject)}/${date}`);
+      const res = await fetch(`http://localhost:5000/api/notes/existing/${selectedClass}/${encodeURIComponent(selectedSubject)}/${selectedTrimestre}`);
       
       if (res.ok) {
         const existingNotes: NoteRow[] = await res.json();
@@ -271,7 +271,8 @@ export default function Notes() {
     const payload = {
       classe: selectedClass,
       matiere: selectedSubject,
-      date,
+      date: new Date().toISOString(),
+      trimestre: selectedTrimestre,
       assessmentType: "controle", // Valeur factice, le backend traitera tous les types
       notes: Object.values(rows),
     };
@@ -314,17 +315,6 @@ export default function Notes() {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Debug info - à supprimer plus tard */}
-          <div className="bg-gray-100 p-3 text-xs rounded">
-            <div><strong>Debug Info:</strong></div>
-            <div>Utilisateur: {user?.nom} (ID: {user?.id_user}, Rôle: {user?.role})</div>
-            <div>Classes disponibles: {classes.length}</div>
-            <div>Matières disponibles: {subjects.length}</div>
-            <div>Élèves: {students.length}</div>
-            <div>Classe sélectionnée: {selectedClass}</div>
-            <div>Matière sélectionnée: {selectedSubject}</div>
-          </div>
-
           {/* controls */}
           <div className="grid md:grid-cols-3 gap-4 items-end">
             <div>
@@ -352,8 +342,16 @@ export default function Notes() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full border rounded-md p-2 bg-white" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Trimestre</label>
+              <select
+                value={selectedTrimestre}
+                onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
+                className="w-full border rounded-md p-2 bg-white"
+              >
+                <option value={1}>1er Trimestre</option>
+                <option value={2}>2ème Trimestre</option>
+                <option value={3}>3ème Trimestre</option>
+              </select>
             </div>
           </div>
 

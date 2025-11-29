@@ -23,6 +23,7 @@ interface FilterOptions {
 const Announcements: React.FC = () => {
   const { user } = useUser();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({ users: [], classes: [] });
   
@@ -58,6 +59,7 @@ const Announcements: React.FC = () => {
 
   const fetchAnnouncements = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       const response = await fetch("http://localhost:5000/api/announcements", {
         headers: { Authorization: `Bearer ${token}` }
@@ -68,6 +70,8 @@ const Announcements: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching announcements:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -219,7 +223,24 @@ const Announcements: React.FC = () => {
 
         {/* Announcements List */}
         <div className="space-y-4">
-          {announcements.length === 0 ? (
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-slate-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-slate-200 rounded w-full"></div>
+                  <div className="h-3 bg-slate-200 rounded w-5/6"></div>
+                  <div className="h-3 bg-slate-200 rounded w-4/6"></div>
+                </div>
+              </div>
+            ))
+          ) : announcements.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-12 text-center">
               <Megaphone size={64} className="mx-auto mb-4 text-slate-300" />
               <p className="text-slate-400 text-lg">Aucune annonce disponible</p>
@@ -271,8 +292,8 @@ const Announcements: React.FC = () => {
 
         {/* Create Modal */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => { setShowCreateModal(false); resetForm(); }}>
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white">
                 <h2 className="text-2xl font-bold">Créer une annonce</h2>
                 <button

@@ -6,6 +6,7 @@ import Notes from "./Notes";
 import NotificationsPage from "../../components/NotificationsPage";
 import Announcements from "../../components/Announcements";
 import Messaging from "../../components/Messaging";
+import ClassesManagement from "../Admin/ClassesManagement";
 
 export default function DashboardTeacher(){
     // Récupérer la dernière page visitée depuis localStorage, ou "dashboard" par défaut
@@ -34,6 +35,9 @@ export default function DashboardTeacher(){
                     break;
                 case "messaging":
                     content=<Messaging/>;
+                    break;
+                case "classes":
+                    content=<ClassesManagement/>;
                     break;
                 default:
                     content=<Dashboard setDash={setDash}/>

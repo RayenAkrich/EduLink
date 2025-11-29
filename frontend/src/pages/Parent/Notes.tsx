@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import   { useEffect, useMemo, useState } from "react";
 import type { Eleve } from "../Shared/types/Eleve";
 
 interface Props {
@@ -177,7 +177,26 @@ export default function Notes({ selectedChild }: Props) {
   }, [notes, viewMode]);
 
   if (loading) {
-    return <div className="p-6 text-center text-gray-600">Chargement des notes…</div>;
+    return (
+      <div className="p-6 bg-slate-50 min-h-screen">
+        <div className="max-w-6xl mx-auto animate-pulse">
+          <div className="h-8 bg-slate-200 rounded w-1/4 mb-6"></div>
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between border-b pb-4">
+                  <div className="flex-1">
+                    <div className="h-4 bg-slate-200 rounded w-1/3 mb-2"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/4"></div>
+                  </div>
+                  <div className="h-8 w-16 bg-slate-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {

@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
   }
 
   return (
-    <div className="w-60 bg-slate-800 text-white shadow-lg p-4 flex flex-col gap-3">
+    <div className=" w-60 bg-slate-900 text-white shadow-lg p-4 flex flex-col gap-3 overflow-y-auto">
       <h2 className="text-xl font-bold mb-4">Espace {role}</h2>
 
       {tabs.map((tab) => (

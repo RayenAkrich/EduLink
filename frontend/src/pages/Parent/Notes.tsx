@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import   { useEffect, useMemo, useState } from "react";
 import type { Eleve } from "../Shared/types/Eleve";
 
 interface Props {

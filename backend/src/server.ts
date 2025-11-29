@@ -12,6 +12,8 @@ import { dashboardRoutes } from "./routes/dashboard";
 import { messagesRoutes } from "./routes/messages";
 import { notificationsRoutes } from "./routes/notifications";
 import { announcementsRoutes } from "./routes/announcements";
+import { classesRoutes } from "./routes/classes";
+import { studentsRoutes } from "./routes/students";
 import errorHandler from "./middleware/errorHandler";
 
 dotenv.config();
@@ -77,6 +79,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/announcements", announcementsRoutes);
+app.use("/api/classes", classesRoutes);
+app.use("/api/students", studentsRoutes);
 
 // Error handler — MUST be last
 app.use(errorHandler);

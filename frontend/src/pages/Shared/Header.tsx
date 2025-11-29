@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import { useUser } from "./userContext";
 import { socketService } from "../../services/socketService";
 import toast from "react-hot-toast";
@@ -173,54 +173,28 @@ function Header({ setHide, hide, onNavigate }: Props) {
 
   return (
     <div className="flex flex-nowrap items-center justify-between px-7 py-2 shadow-lg text-slate-900 sticky bg-white top-0 z-50">
-      <img
-        src="src/assets/ChatGPT Image 23 nov. 2025, 14_44_13.png"
-        alt="logo ecole"
-        className="w-20 h-20"
-      />
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="size-6 cursor-pointer -ml-30 mr-35"
-        onClick={() => setHide(!hide)}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-        />
-      </svg>
-      <div className="flex items-center">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={1.5}
-          stroke="currentColor"
-          className="size-6 cursor-pointer"
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => setHide(!hide)}
+          className="p-2 rounded-md hover:bg-slate-100 transition-colors"
+          aria-label="Toggle sidebar"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-          />
-        </svg>
-        <input
-          type="text"
-          placeholder="Recherche"
-          className="border rounded w-80 h-10 p-2"
+          <Menu size={24} />
+        </button>
+
+        <img
+          src="src/assets/ChatGPT Image 23 nov. 2025, 14_44_13.png"
+          alt="logo ecole"
+          className="w-12 h-12 rounded-md object-cover"
         />
       </div>
 
-      <div className="flex gap-3 items-center">
+        <div className="flex gap-3 items-center">
         {/* Notifications Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="relative p-2 hover:bg-slate-100 rounded-full transition-colors"
+              className="relative p-2 hover:bg-slate-100 rounded-full transition-colors border border-transparent hover:border-slate-200"
           >
             <Bell size={24} />
             {unreadCount > 0 && (
@@ -279,10 +253,16 @@ function Header({ setHide, hide, onNavigate }: Props) {
           )}
         </div>
 
-        <img src="https://img.freepik.com/free-photo/young-handsome-man-holding-notebooks-concept-e-learning-courses_1258-26588.jpg" alt="image(enseignant/parent)" className="w-10 rounded-full object-fit bg-slate-200" />
-        <div className="flex flex-col">
-          <p className="font-medium">{user?.nom}</p>
-          <p className="text-sm text-slate-500">{user?.role}</p>
+        <div className="flex items-center gap-3">
+          <img
+            src="https://img.freepik.com/free-photo/young-handsome-man-holding-notebooks-concept-e-learning-courses_1258-26588.jpg"
+            alt="image(enseignant/parent)"
+            className="w-10 h-10 rounded-full object-cover bg-slate-200 border border-slate-100"
+          />
+          <div className="hidden sm:flex flex-col">
+            <p className="font-medium">{user?.nom}</p>
+            <p className="text-sm text-slate-500">{user?.role}</p>
+          </div>
         </div>
       </div>
     </div>

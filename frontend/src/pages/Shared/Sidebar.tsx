@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Home, Users, BookOpen, Calendar, ClipboardList } from "lucide-react";
 import { useUser } from "./userContext";
 
@@ -45,6 +45,44 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: React.ReactN
 
 const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
   const {user}= useUser();
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCounts();
+      // Refresh counts every 30 seconds
+      const interval = setInterval(fetchUnreadCounts, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchUnreadCounts = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Fetch unread notifications count
+      const notifResponse = await fetch("http://localhost:5000/api/notifications/unread-count", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (notifResponse.ok) {
+        const notifData = await notifResponse.json();
+        setUnreadNotifications(notifData.data?.count || 0);
+      }
+
+      // Fetch unread messages count
+      const msgResponse = await fetch("http://localhost:5000/api/messages/unread-count", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (msgResponse.ok) {
+        const msgData = await msgResponse.json();
+        setUnreadMessages(msgData.count || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching unread counts:", error);
+    }
+  };
+  
   if (!user) return <div>Sidebar...</div>;
   const role:Role=user.role;
   
@@ -66,11 +104,21 @@ const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
         <button
           key={tab.id}
           onClick={() => {setDash(String(tab.id).toLowerCase())}}
-          className={`flex items-center cursor-pointer gap-2 p-2 rounded-xl transition-all
+          className={`flex items-center cursor-pointer gap-2 p-2 rounded-xl transition-all relative
             ${String(dash ?? "").toLowerCase() === tab.id ? "bg-slate-600" : "hover:bg-slate-600"}`}
         >
           {tab.icon}
-          <span>{tab.label}</span>
+          <span className="flex-1 text-left">{tab.label}</span>
+          {tab.id === "notifications" && unreadNotifications > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+              {unreadNotifications}
+            </span>
+          )}
+          {tab.id === "messaging" && unreadMessages > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+              {unreadMessages}
+            </span>
+          )}
         </button>
       ))}
     </div>
@@ -78,3 +126,4 @@ const Sidebar: React.FC<SidebarProps> = ({ dash, setDash }) => {
 };
 
 export default Sidebar;
+

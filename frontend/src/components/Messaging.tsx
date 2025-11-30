@@ -37,6 +37,8 @@ const Messaging: React.FC = () => {
   const [users, setUsers] = useState<UserOption[]>([]);
   const [showNewChat, setShowNewChat] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,6 +85,7 @@ const Messaging: React.FC = () => {
 
   const fetchConversations = async () => {
     try {
+      setLoadingConversations(true);
       const token = localStorage.getItem("token");
       const response = await fetch("http://localhost:5000/api/messages/conversations", {
         headers: { Authorization: `Bearer ${token}` }
@@ -93,11 +96,14 @@ const Messaging: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching conversations:", error);
+    } finally {
+      setLoadingConversations(false);
     }
   };
 
   const fetchMessages = async (userId: number) => {
     try {
+      setLoadingMessages(true);
       const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:5000/api/messages/conversation/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -108,6 +114,8 @@ const Messaging: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
+    } finally {
+      setLoadingMessages(false);
     }
   };
 
@@ -242,6 +250,25 @@ const Messaging: React.FC = () => {
                 </div>
               ))}
             </div>
+          ) : loadingConversations ? (
+            // Skeleton loader for conversations
+            <div className="p-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-3 border-b border-slate-100 animate-pulse"
+                >
+                  <div className="w-12 h-12 bg-slate-300 rounded-full flex-shrink-0"></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <div className="h-4 bg-slate-300 rounded w-32"></div>
+                      <div className="h-3 bg-slate-300 rounded w-12"></div>
+                    </div>
+                    <div className="h-3 bg-slate-300 rounded w-48"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <>
               {filteredConversations.length === 0 ? (
@@ -302,32 +329,55 @@ const Messaging: React.FC = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((msg) => {
-                const isOwn = msg.expediteur_id === user?.id_user;
-                return (
-                  <div
-                    key={msg.id_message}
-                    className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
-                  >
+              {loadingMessages ? (
+                // Skeleton loader
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
                     <div
-                      className={`max-w-md px-4 py-2 rounded-2xl ${
-                        isOwn
-                          ? "bg-blue-600 text-white"
-                          : "bg-white border border-slate-200"
-                      }`}
+                      key={i}
+                      className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
                     >
-                      <p className="text-sm">{msg.contenu}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          isOwn ? "text-blue-100" : "text-slate-400"
-                        }`}
+                      <div
+                        className={`max-w-md px-4 py-3 rounded-2xl ${
+                          i % 2 === 0 ? "bg-blue-100" : "bg-slate-100"
+                        } animate-pulse`}
                       >
-                        {formatTime(msg.date_envoi)}
-                      </p>
+                        <div className="h-4 bg-slate-300 rounded w-48 mb-2"></div>
+                        <div className="h-3 bg-slate-300 rounded w-16"></div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {messages.map((msg) => {
+                    const isOwn = msg.expediteur_id === user?.id_user;
+                    return (
+                      <div
+                        key={msg.id_message}
+                        className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-md px-4 py-2 rounded-2xl ${
+                            isOwn
+                              ? "bg-blue-600 text-white"
+                              : "bg-white border border-slate-200"
+                          }`}
+                        >
+                          <p className="text-sm">{msg.contenu}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isOwn ? "text-blue-100" : "text-slate-400"
+                            }`}
+                          >
+                            {formatTime(msg.date_envoi)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
               <div ref={messagesEndRef} />
             </div>
 

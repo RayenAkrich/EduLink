@@ -26,7 +26,7 @@ const TABS_BY_ROLE: Record<Role, { id: string; label: string; icon: React.ReactN
   enseignant: [
     { id: "dashboard", label: "Dashboard", icon: <Home size={18} /> }, //hajji
     { id: "notes", label: "Gestion des notes", icon: <ClipboardList size={18} /> },//hajji
-    { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> },
+    { id: "activites", label: "Activités / Absences", icon: <Calendar size={18} /> },//akriche
     { id: "notifications", label: "Notifications", icon: <ClipboardList size={18} /> },//ayoub
     { id: "announces", label: "Annonces", icon: <ClipboardList size={18} /> },//ayoub
     { id: "messaging", label: "Messagerie", icon: <Users size={18} /> }, //for admin-enseignant communication ayoub

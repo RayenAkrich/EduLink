@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
 
 import { activitiesRoutes } from "./routes/activities";
 import { notesRoutes } from "./routes/notes";
@@ -14,6 +15,8 @@ import { notificationsRoutes } from "./routes/notifications";
 import { announcementsRoutes } from "./routes/announcements";
 import { classesRoutes } from "./routes/classes";
 import { studentsRoutes } from "./routes/students";
+import { activitesRoutes } from "./routes/activites";
+import { absencesRoutes } from "./routes/absences";
 import errorHandler from "./middleware/errorHandler";
 import usersRoutes from "./routes/users";
 dotenv.config();
@@ -37,6 +40,12 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   socket.on("register", (userId: number) => {
+    // Validate userId is a valid number
+    if (!userId || userId === 0 || isNaN(userId)) {
+      console.error(`Invalid userId received: ${userId} from socket ${socket.id}`);
+      return;
+    }
+    
     activeUsers.set(userId, socket.id);
     console.log(`User ${userId} registered with socket ${socket.id}`);
   });
@@ -76,6 +85,8 @@ app.use("/api/announcements", announcementsRoutes);
 app.use("/api/classes", classesRoutes);
 app.use("/api/students", studentsRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/activites", activitesRoutes);
+app.use("/api/absences", absencesRoutes);
 
 
 app.use(errorHandler);

@@ -6,7 +6,7 @@ interface Props {
 }
 
 function ModifInfo({ setDash }: Props) {
-    const { user, setUser } = useUser();
+    const { user, refreshUser } = useUser();
     const [formData, setFormData] = useState({
         nom: '',
         email: '',
@@ -62,8 +62,7 @@ function ModifInfo({ setDash }: Props) {
             });
 
             if (response.ok) {
-                const updatedUser = await response.json();
-                setUser(updatedUser);
+                await refreshUser(); // Refresh user data from server
                 setMessage({ type: 'success', text: 'Informations mises à jour avec succès !' });
                 setTimeout(() => setDash('dashboard'), 2000);
             } else {

@@ -3,10 +3,7 @@ import Dashboard from "./Dashboard";
 import Layout from "../Shared/Layout";
 import Users from "./Users";
 import ClassesManagement from "./ClassesManagement";
-// Placeholder ActivitiesAdmin component because './ActivitiesAdmin' module is missing
-const ActivitiesAdmin = () => {
-    return <div>Activities Admin (placeholder)</div>;
-};
+import ActivitiesManagement from "./ActivitiesManagement";
 import NotificationsPage from "../../components/NotificationsPage";
 import Announcements from "../../components/Announcements";
 import Messaging from "../../components/Messaging";
@@ -22,7 +19,7 @@ export default function DashboardAdmin(){
             content = <ClassesManagement />;
             break;
         case "activites":
-            content = <ActivitiesAdmin />;
+            content = <ActivitiesManagement />;
             break;
         case "notifications":
             content = <NotificationsPage onNavigate={setDash} />;

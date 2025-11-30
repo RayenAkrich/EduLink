@@ -53,6 +53,13 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const absenceId = parseInt(req.params.id);
 
+    if (isNaN(absenceId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'absence invalide" 
+      });
+    }
+
     const absence = await prisma.absence.findUnique({
       where: { id_absence: absenceId },
       include: {
@@ -88,6 +95,13 @@ router.get("/student/:studentId", authMiddleware, async (req: Request, res: Resp
   try {
     const studentId = parseInt(req.params.studentId);
 
+    if (isNaN(studentId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'étudiant invalide" 
+      });
+    }
+
     const absences = await prisma.absence.findMany({
       where: { id_eleve: studentId },
       include: {
@@ -118,13 +132,7 @@ router.get("/student/:studentId", authMiddleware, async (req: Request, res: Resp
 router.post("/", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userRole = req.user!.role;
-
-    if (userRole !== "admin" && userRole !== "enseignant") {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Seuls les admins et enseignants peuvent créer des absences" 
-      });
-    }
+    const userId = req.user!.id_user;
 
     const { id_activite, id_eleve, justifiee, commentaire } = req.body;
 
@@ -157,6 +165,16 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
         success: false, 
         message: "Élève non trouvé" 
       });
+    }
+
+    // If parent, verify that the student is their child
+    if (userRole === "parent") {
+      if (eleve.id_parent !== userId) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Vous ne pouvez déclarer des absences que pour vos propres enfants" 
+        });
+      }
     }
 
     // Check if absence already exists for this student and activity
@@ -202,11 +220,25 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
-// Update absence
-router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
+// Delete absence
+router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userRole = req.user!.role;
     const absenceId = parseInt(req.params.id);
+
+    if (isNaN(absenceId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'absence invalide" 
+      });
+    }
+
+    if (userRole !== "admin" && userRole !== "enseignant") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'absence invalide" 
+      });
+    }
 
     if (userRole !== "admin" && userRole !== "enseignant") {
       return res.status(403).json({ 
@@ -249,6 +281,13 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userRole = req.user!.role;
     const absenceId = parseInt(req.params.id);
+
+    if (isNaN(absenceId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'absence invalide" 
+      });
+    }
 
     if (userRole !== "admin" && userRole !== "enseignant") {
       return res.status(403).json({ 

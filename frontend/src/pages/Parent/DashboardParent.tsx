@@ -6,6 +6,7 @@ import Dashboard from "./Dashboard";
 import type { Eleve } from "../Shared/types/Eleve";
 import NotificationsPage from "../../components/NotificationsPage";
 import Announcements from "../../components/Announcements";
+import ActivitiesManagement from "./ActivitiesManagement";
 
 export default function DashboardParent() {
     // Récupérer la dernière page visitée depuis localStorage, ou "Dashboard" par défaut
@@ -35,6 +36,10 @@ export default function DashboardParent() {
 
           case "announces":
             content=<Announcements/>;
+          break;
+
+          case "activites":
+            content=<ActivitiesManagement/>;
           break;
 
         case "dashboard":

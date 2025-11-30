@@ -38,10 +38,92 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// Get activities for parent's children classes - MUST be before /:id route
+router.get("/my-children-activities", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userRole = req.user!.role;
+    const userId = req.user!.id_user;
+
+    if (userRole !== "parent") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Seuls les parents peuvent accéder à cette ressource" 
+      });
+    }
+
+    // Get parent's children
+    const children = await prisma.eleve.findMany({
+      where: {
+        id_parent: userId
+      },
+      include: {
+        eleves_classes: {
+          select: {
+            id_classe: true
+          }
+        }
+      }
+    });
+
+    // Extract class IDs
+    const classIds = children.flatMap(child => 
+      child.eleves_classes.map(ec => ec.id_classe)
+    );
+
+    // Get unique class IDs
+    const uniqueClassIds = [...new Set(classIds)];
+
+    if (uniqueClassIds.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Get activities for these classes
+    const activites = await prisma.activite.findMany({
+      where: {
+        id_classe: {
+          in: uniqueClassIds
+        }
+      },
+      include: {
+        classe: {
+          select: {
+            nom_classe: true,
+            annee_scolaire: true
+          }
+        },
+        enseignant: {
+          select: {
+            nom: true,
+            email: true
+          }
+        },
+        _count: {
+          select: {
+            absences: true
+          }
+        }
+      },
+      orderBy: { date_debut: 'desc' }
+    });
+
+    res.json({ success: true, data: activites });
+  } catch (error) {
+    console.error("Error fetching children activities:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
 // Get activity by ID
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const activiteId = parseInt(req.params.id);
+
+    if (isNaN(activiteId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'activité invalide" 
+      });
+    }
 
     const activite = await prisma.activite.findUnique({
       where: { id_activite: activiteId },
@@ -86,6 +168,13 @@ router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
 router.get("/:id/absences", authMiddleware, async (req: Request, res: Response) => {
   try {
     const activiteId = parseInt(req.params.id);
+
+    if (isNaN(activiteId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'activité invalide" 
+      });
+    }
 
     const absences = await prisma.absence.findMany({
       where: { id_activite: activiteId },
@@ -183,6 +272,13 @@ router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
     const userId = req.user!.id_user;
     const activiteId = parseInt(req.params.id);
 
+    if (isNaN(activiteId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'activité invalide" 
+      });
+    }
+
     if (userRole !== "admin" && userRole !== "enseignant") {
       return res.status(403).json({ 
         success: false, 
@@ -248,6 +344,13 @@ router.delete("/:id", authMiddleware, async (req: Request, res: Response) => {
     const userRole = req.user!.role;
     const userId = req.user!.id_user;
     const activiteId = parseInt(req.params.id);
+
+    if (isNaN(activiteId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'activité invalide" 
+      });
+    }
 
     if (userRole !== "admin" && userRole !== "enseignant") {
       return res.status(403).json({ 

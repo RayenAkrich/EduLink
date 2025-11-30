@@ -25,6 +25,10 @@ export default function Notes() {
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1);
 
   const [students, setStudents] = useState<Student[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const studentsPerPage = 10;
+  
   const [rows, setRows] = useState<Record<string, NoteRow>>({});
   const [allNotes, setAllNotes] = useState<Record<string, Record<string, NoteRow>>>({});  // { matiere: { studentId: NoteRow } }
 
@@ -177,6 +181,27 @@ export default function Notes() {
   };
 
   const canSave = useMemo(() => students.length > 0, [students]);
+
+  // Filtrer les élèves selon la recherche
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery.trim()) return students;
+    const query = searchQuery.toLowerCase();
+    return students.filter(s => 
+      s.nom.toLowerCase().includes(query) || 
+      s.prenom?.toLowerCase().includes(query)
+    );
+  }, [students, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
+  const startIndex = (currentPage - 1) * studentsPerPage;
+  const endIndex = startIndex + studentsPerPage;
+  const currentStudents = filteredStudents.slice(startIndex, endIndex);
+
+  // Réinitialiser la page quand la recherche change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedClass, selectedSubject]);
 
   // Fonction pour charger toutes les notes de toutes les matières en une seule fois (optimisé)
   const loadAllNotes = async () => {
@@ -357,19 +382,42 @@ export default function Notes() {
 
           {/* students table - afficher seulement si une classe est sélectionnée */}
           {selectedClass && selectedSubject ? (
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto border-collapse">
-                <thead>
-                  <tr className="text-left text-sm text-gray-600">
-                    <th className="py-3 px-3">Élève</th>
-                    <th className="py-3 px-3">Oral</th>
-                    <th className="py-3 px-3">Contrôle</th>
-                    <th className="py-3 px-3">Synthèse</th>
-                    <th className="py-3 px-3">Moyenne</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((s) => {
+            <div className="space-y-4">
+              {/* Barre de recherche et info */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Rechercher un élève..."
+                      className="w-full border rounded-md pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {filteredStudents.length} élève{filteredStudents.length > 1 ? 's' : ''} 
+                  {searchQuery && ` (sur ${students.length})`}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto border-collapse">
+                  <thead>
+                    <tr className="text-left text-sm text-gray-600 bg-gray-50">
+                      <th className="py-3 px-3">Élève</th>
+                      <th className="py-3 px-3">Oral (/20)</th>
+                      <th className="py-3 px-3">Contrôle (/20)</th>
+                      <th className="py-3 px-3">Synthèse (/20)</th>
+                      <th className="py-3 px-3">Moyenne</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentStudents.map((s) => {
                   const r = rows[s.id] ?? { studentId: s.id, oral: null, controle: null, synthese: null };
                   const avg = averageOf(r);
                   return (
@@ -419,14 +467,50 @@ export default function Notes() {
                     </tr>
                   );
                 })}
-                {students.length === 0 && (
+                {currentStudents.length === 0 && (
                   <tr>
-                    <td className="py-4 px-3 text-gray-500" colSpan={5}>Aucun élève trouvé pour cette classe.</td>
+                    <td className="py-4 px-3 text-gray-500" colSpan={5}>
+                      {searchQuery ? "Aucun élève trouvé." : "Aucun élève dans cette classe."}
+                    </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {filteredStudents.length > studentsPerPage && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={`px-4 py-2 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Précédent
+              </button>
+              
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className={`px-4 py-2 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Suivant
+              </button>
+            </div>
+          )}
+        </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
               Veuillez sélectionner une classe et une matière pour afficher les notes.

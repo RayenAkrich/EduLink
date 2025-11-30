@@ -23,7 +23,7 @@ const TABS_BY_ROLE: Record<Role, TabItem[]> = {
   admin: [
     { id: "dashboard", label: "Tableau de bord", icon: <BarChart3 size={18} />, category: "main" },
     { id: "users", label: "Gestion du Personnel", icon: <Users size={18} />, category: "GESTION" },
-    { id: "classes", label: "Gestion des élèves", icon: <GraduationCap size={18} />, category: "GESTION" },
+    { id: "classes", label: "Gestion des classes", icon: <GraduationCap size={18} />, category: "GESTION" },
     { id: "notes", label: "Gestion notes", icon: <FileText size={18} />, category: "SCOLARITE" },
     { id: "activites", label: "Gestion des Activités & Absences", icon: <Calendar size={18} />, category: "SCOLARITE" },
     { id: "announces", label: "Annonces", icon: <ClipboardList size={18} />, category: "main" },

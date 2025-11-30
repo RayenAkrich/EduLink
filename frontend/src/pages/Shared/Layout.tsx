@@ -2,7 +2,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
-import Footer from "./Footer";
 interface Props{
     children: ReactNode;
     setDash:React.Dispatch<React.SetStateAction<string>>;
@@ -21,7 +20,6 @@ export default function Layout({children,setDash,dash}:Props){
                 </div>
                 <main className="flex-1 bg-gray-100 overflow-y-auto">{children}</main>
             </div>
-            <Footer />
         </div>
     )
 }

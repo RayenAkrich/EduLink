@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, LogOut, User, ChevronDown } from "lucide-react";
 import { useUser } from "./userContext";
 import { socketService } from "../../services/socketService";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   setHide: React.Dispatch<React.SetStateAction<boolean>>;
@@ -23,10 +24,13 @@ interface Notification {
 
 function Header({ setHide, hide, onNavigate }: Props) {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user && user.id_user) {
@@ -62,6 +66,9 @@ function Header({ setHide, hide, onNavigate }: Props) {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
       }
     };
 
@@ -172,34 +179,35 @@ function Header({ setHide, hide, onNavigate }: Props) {
     return date.toLocaleDateString("fr-FR");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    socketService.disconnect();
+    navigate("/login");
+  };
+
   return (
-    <div className="flex flex-nowrap items-center justify-between px-7 py-2 shadow-lg text-slate-900 sticky bg-white top-0 z-50">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-nowrap items-center justify-between px-4 py-2 shadow-md bg-gray-100 sticky top-0 z-50 border-b border-gray-300">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => setHide(!hide)}
-          className="p-2 rounded-md hover:bg-slate-100 transition-colors"
+          className="p-1.5 rounded-md hover:bg-gray-200 transition-colors text-gray-700"
           aria-label="Toggle sidebar"
         >
-          <Menu size={24} />
+          <Menu size={20} />
         </button>
-
-        <img
-          src="src/assets/Logo.png"
-          alt="logo ecole"
-          className="w-12 h-12 rounded-md object-cover"
-        />
       </div>
 
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 items-center">
         {/* Notifications Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-              className="relative p-2 hover:bg-slate-100 rounded-full transition-colors border border-transparent hover:border-slate-200"
+            className="relative p-1.5 hover:bg-gray-200 rounded-full transition-colors"
           >
-            <Bell size={24} />
+            <Bell size={20} className="text-gray-700" />
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -254,16 +262,41 @@ function Header({ setHide, hide, onNavigate }: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <img
-            src="https://img.freepik.com/free-photo/young-handsome-man-holding-notebooks-concept-e-learning-courses_1258-26588.jpg"
-            alt="image(enseignant/parent)"
-            className="w-10 h-10 rounded-full object-cover bg-slate-200 border border-slate-100"
-          />
-          <div className="hidden sm:flex flex-col">
-            <p className="font-medium">{user?.nom}</p>
-            <p className="text-sm text-slate-500">{user?.role}</p>
-          </div>
+        <div className="relative" ref={profileMenuRef}>
+          <button
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="flex items-center gap-2 hover:bg-gray-200 rounded-lg p-1.5 transition-colors"
+          >
+            <img
+              src="https://img.freepik.com/free-photo/young-handsome-man-holding-notebooks-concept-e-learning-courses_1258-26588.jpg"
+              alt="image(enseignant/parent)"
+              className="w-8 h-8 rounded-full object-cover bg-gray-200 border border-gray-300"
+            />
+            <div className="hidden sm:flex flex-col text-left">
+              <p className="text-sm font-medium text-gray-800">{user?.nom}</p>
+              <p className="text-xs text-gray-500">{user?.role}</p>
+            </div>
+            <ChevronDown size={16} className="text-gray-600" />
+          </button>
+
+          {showProfileMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden">
+              <div className="p-3 border-b border-gray-200 bg-gray-50">
+                <p className="font-semibold text-sm text-gray-800">{user?.nom}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+              </div>
+              
+              <div className="py-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-red-600 transition-colors"
+                >
+                  <LogOut size={18} />
+                  <span className="text-sm font-medium">Déconnexion</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

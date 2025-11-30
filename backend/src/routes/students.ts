@@ -41,10 +41,59 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
   }
 });
 
+// Get my children (for parents) - MUST be before /:id route
+router.get("/my-children", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userRole = req.user!.role;
+    const userId = req.user!.id_user;
+
+    if (userRole !== "parent") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Seuls les parents peuvent accéder à cette ressource" 
+      });
+    }
+
+    const children = await prisma.eleve.findMany({
+      where: {
+        id_parent: userId
+      },
+      include: {
+        eleves_classes: {
+          include: {
+            classe: {
+              select: {
+                id_classe: true,
+                nom_classe: true,
+                annee_scolaire: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        nom: 'asc'
+      }
+    });
+
+    res.json({ success: true, data: children });
+  } catch (error) {
+    console.error("Error fetching children:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
 // Get single student
 router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
   try {
     const studentId = parseInt(req.params.id);
+
+    if (isNaN(studentId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "ID d'étudiant invalide" 
+      });
+    }
 
     const student = await prisma.eleve.findUnique({
       where: { id_eleve: studentId },

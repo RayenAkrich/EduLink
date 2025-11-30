@@ -4,35 +4,69 @@ import type { User } from "./types/User";
 type UserContextType = {
     user: User | null;
     setUser: (user: User | null) => void;
+    refreshUser: () => Promise<void>;
+    loading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export default function UserContextProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(() => {
-        // Initialiser depuis localStorage au montage
-        const stored = localStorage.getItem("edulink_user");
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch {
-                return null;
-            }
-        }
-        return null;
-    });
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Sauvegarder dans localStorage à chaque changement de user
+    // Fetch user from server using token on mount
     useEffect(() => {
-        if (user) {
-            localStorage.setItem("edulink_user", JSON.stringify(user));
+        const token = localStorage.getItem("token");
+        if (token) {
+            fetchUserFromToken();
         } else {
-            localStorage.removeItem("edulink_user");
+            setLoading(false);
         }
-    }, [user]);
+    }, []);
+
+    const fetchUserFromToken = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                setUser(null);
+                setLoading(false);
+                return;
+            }
+
+            const response = await fetch("http://localhost:5000/api/auth/me", {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                // Token invalide ou expiré
+                localStorage.removeItem("token");
+                setUser(null);
+                setLoading(false);
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success && data.user) {
+                setUser(data.user);
+            } else {
+                setUser(null);
+            }
+        } catch (error) {
+            console.error("Error fetching user from token:", error);
+            setUser(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const refreshUser = async () => {
+        await fetchUserFromToken();
+    };
 
     return (
-        <UserContext.Provider value={{ user, setUser }}>
+        <UserContext.Provider value={{ user, setUser, refreshUser, loading }}>
             {children}
         </UserContext.Provider>
     )

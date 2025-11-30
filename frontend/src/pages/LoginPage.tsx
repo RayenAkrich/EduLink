@@ -2,12 +2,12 @@ import React from "react";
 import LoginForm from "../components/LoginForm";
 import LogoHeader from "../components/LogoHeader";
 import { useNavigate } from "react-router-dom";
-import type { User } from "./Shared/types/User";
 import { useUser } from "./Shared/userContext";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const {setUser}=useUser();
+  const { refreshUser } = useUser();
+  
   const handleLogin = async(email: string, password: string) => {
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
@@ -22,15 +22,22 @@ const LoginPage: React.FC = () => {
         throw new Error("Email ou mot de passe incorrect !");
       }
 
-      const data = await res.json() as User;
-     
+      const data = await res.json();
       
+      if (!data.success) {
+        throw new Error(data.message || "Échec de connexion");
+      }
 
-    
-    console.log("Login successful for:", email);
-    setUser(data);
-    // Rediriger vers la page d'accueil après connexion réussie
-    navigate("/dashboard");
+      // Store only the token
+      localStorage.setItem("token", data.token);
+      
+      // Fetch user data from token via context
+      await refreshUser();
+      
+      console.log("Login successful for:", email);
+      
+      // Rediriger vers la page d'accueil après connexion réussie
+      navigate("/dashboard");
     } catch (error) {
       console.error("Erreur login :", error);
       alert("Échec de connexion !");

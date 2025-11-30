@@ -144,6 +144,7 @@ router.post("/send", authMiddleware, async (req: Request, res: Response) => {
 });
 
 // Get users to message (admin/teacher only)
+// Get users available for messaging
 router.get("/users", authMiddleware, async (req: Request, res: Response) => {
   try {
     const userRole = req.user!.role;
@@ -175,6 +176,25 @@ router.get("/users", authMiddleware, async (req: Request, res: Response) => {
     res.json({ success: true, data: users });
   } catch (error) {
     console.error("Error fetching users:", error);
+    res.status(500).json({ success: false, message: "Erreur serveur" });
+  }
+});
+
+// Get unread messages count
+router.get("/unread-count", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id_user;
+
+    const count = await prisma.message.count({
+      where: {
+        destinataire_id: userId,
+        lu: false
+      }
+    });
+
+    res.json({ success: true, count });
+  } catch (error) {
+    console.error("Error fetching unread messages count:", error);
     res.status(500).json({ success: false, message: "Erreur serveur" });
   }
 });

@@ -29,11 +29,12 @@ function Header({ setHide, hide, onNavigate }: Props) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && user.id_user) {
+      console.log("Connecting socket for user:", user.id_user);
       fetchNotifications();
       fetchUnreadCount();
 
-      // Connect socket
+      // Connect socket with valid user ID
       socketService.connect(user.id_user);
 
       // Listen for new notifications

@@ -196,6 +196,7 @@ const Users: React.FC = () => {
               />
             </div>
             <select
+            title="Filtrer les utilisateurs par rôle"
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
               className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -276,6 +277,7 @@ const Users: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex gap-2 justify-center">
                           <button
+                          title="Modifier cet utilisateur"
                             onClick={() => handleEdit(user)}
                             className="text-blue-600 hover:text-blue-700 p-2 rounded hover:bg-blue-50"
                           >
@@ -316,6 +318,7 @@ const Users: React.FC = () => {
               <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Créer un utilisateur</h2>
                 <button
+                title="Fermer le formulaire de création"
                   onClick={() => { setShowCreateModal(false); resetForm(); }}
                   className="text-slate-400 hover:text-slate-600"
                 >
@@ -373,6 +376,7 @@ const Users: React.FC = () => {
                         Rôle
                       </label>
                       <select
+                      title="Sélectionner le rôle de l'utilisateur"
                         value={form.role}
                         onChange={(e) => setForm({ ...form, role: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -413,6 +417,7 @@ const Users: React.FC = () => {
               <div className="p-6 border-b border-slate-200 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Modifier l'utilisateur</h2>
                 <button
+                title="Fermer le formulaire de modification"
                   onClick={() => { setShowEditModal(false); resetForm(); }}
                   className="text-slate-400 hover:text-slate-600"
                 >
@@ -469,6 +474,7 @@ const Users: React.FC = () => {
                         Rôle
                       </label>
                       <select
+                      title="Sélectionner le rôle de l'utilisateur"
                         value={form.role}
                         onChange={(e) => setForm({ ...form, role: e.target.value })}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

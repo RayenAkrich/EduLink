@@ -19,6 +19,7 @@ import { activitesRoutes } from "./routes/activites";
 import { absencesRoutes } from "./routes/absences";
 import errorHandler from "./middleware/errorHandler";
 import usersRoutes from "./routes/users";
+import metricsRouter from "./routes/metrics"; 
 dotenv.config();
 
 declare const process: any;
@@ -87,6 +88,7 @@ app.use("/api/students", studentsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/activites", activitesRoutes);
 app.use("/api/absences", absencesRoutes);
+app.use("/api/metrics", metricsRouter);
 
 
 app.use(errorHandler);
